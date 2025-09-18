@@ -11,7 +11,7 @@ function App() {
   const items = [
     {
       label: "About",
-      bgColor: "#0D0716",
+      bgColor: "transparent",
       textColor: "#fff",
       links: [
         { label: "Company", ariaLabel: "About Company" },
@@ -20,7 +20,7 @@ function App() {
     },
     {
       label: "Projects",
-      bgColor: "#170D27",
+      bgColor: "transparent",
       textColor: "#fff",
       links: [
         { label: "Featured", ariaLabel: "Featured Projects" },
@@ -28,11 +28,10 @@ function App() {
       ]
     },
     {
-      label: "Contact",
-      bgColor: "#271E37",
-      textColor: "#fff",
+      label: "Legacy Site",
+      bgColor: "transparent",
+      textColor: "#ffffffff",
       links: [
-        { label: "Email", ariaLabel: "Email us" },
         { label: "Twitter", ariaLabel: "Twitter" },
         { label: "LinkedIn", ariaLabel: "LinkedIn" }
       ]
