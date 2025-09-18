@@ -35,35 +35,36 @@ const MealItem = ({ item, onToggle }) => {
       const tl = gsap.timeline();
       
       if (isOpen) {
-        // OPENING: Animate height, margin, and borderWidth
-        gsap.set(container, { height: 'auto' }); // First, set height to auto to measure its natural size
+        gsap.set(container, { height: 'auto' });
+        
+        // Expansion animation (duration: 0.4s)
         tl.fromTo(container, 
           { height: 0, marginTop: 0, borderWidth: 0 }, 
           { 
             height: container.scrollHeight, 
             marginTop: '0.5rem',
-            borderWidth: '1px', // Animate TO a 1px border width
+            borderWidth: '1px',
             duration: 0.4, 
             ease: 'power2.inOut' 
           }
         );
-        // Fade in the content during the expansion
-        tl.to(content, { opacity: 1, duration: 0.3 }, "-=0.2");
+
+        // Fade-in animation (duration: 0.3s)
+        // Start 0.1s in to sync end times
+        tl.to(content, { opacity: 1, duration: 0.3 }, 0.1);
+
       } else {
-        // CLOSING: Animate content out first
         tl.to(content, { opacity: 0, duration: 0.2 });
-        // Then, collapse the container, animating borderWidth back to 0
         tl.to(container, { 
           height: 0, 
           marginTop: 0,
-          borderWidth: 0, // Animate TO a 0px border width
+          borderWidth: 0,
           duration: 0.4, 
           ease: 'power2.inOut' 
         });
       }
     }
 
-    // Inform the parent App component to resize after the animation completes
     const timer = setTimeout(() => {
       onToggle();
     }, 400); 

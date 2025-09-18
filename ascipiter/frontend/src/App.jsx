@@ -7,7 +7,7 @@ import './App.css';
 import Silk from './Silk';
 import CardNav from './CardNav';
 import logo from './assets/logo.svg';
-import MealItem from './MealItem'; // Import the new component
+import MealItem from './MealItem';
 
 function App() {
   const [activePage, setActivePage] = useState('breakfast');
@@ -17,6 +17,7 @@ function App() {
 
   const cardRef = useRef(null);
   const contentRef = useRef(null);
+  const pageContentRef = useRef(null);
 
   const triggerCardResize = useCallback(() => {
     if (cardRef.current && contentRef.current) {
@@ -85,13 +86,27 @@ function App() {
   ];
 
   useLayoutEffect(() => {
-    // A short delay ensures that the content has rendered before we measure it
-    const timer = setTimeout(() => {
-      triggerCardResize();
-    }, 100); 
-
-    return () => clearTimeout(timer);
-  }, [activePage, isLoading, triggerCardResize]);
+    if (cardRef.current && contentRef.current && pageContentRef.current) {
+      gsap.set(pageContentRef.current, { opacity: 0 });
+      const targetHeight = contentRef.current.scrollHeight;
+      
+      const tl = gsap.timeline();
+      
+      // Resize animation (duration: 0.5s)
+      tl.to(cardRef.current, {
+        height: targetHeight,
+        duration: 0.5,
+        ease: 'power3.inOut',
+      });
+      
+      // Fade-in animation (duration: 0.4s)
+      // Start it 0.1s after the timeline begins so it ends at the same time as the resize
+      tl.to(pageContentRef.current, {
+        opacity: 1,
+        duration: 0.4,
+      }, 0.1); // <-- This positions the start of the animation
+    }
+  }, [activePage, isLoading]);
 
   const renderCardContent = () => {
     if (isLoading) {
@@ -165,7 +180,7 @@ function App() {
             distortionScale={-80}
           >
             <div className="card-content" ref={contentRef}>
-              <div> 
+              <div ref={pageContentRef}> 
                 {renderCardContent()}
               </div>
               <div className="inner-nav-bar">
