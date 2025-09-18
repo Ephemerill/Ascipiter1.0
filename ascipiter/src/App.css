@@ -85,9 +85,11 @@ body, html, #root {
 }
 
 .card-content {
-  padding: 2rem;
+  /* This now just provides padding for the text content */
+  padding: 2rem 2rem 6rem 2rem;
   color: white;
   text-align: center;
+  box-sizing: border-box;
 }
 
 .card-content h2 {
@@ -296,12 +298,57 @@ body, html, #root {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  /* --- THIS IS THE FIX --- */
   color: inherit;
 }
 
 .nav-card-link:hover {
   opacity: 0.75;
+}
+
+/* --- NEW STYLES FOR INNER NAV BAR --- */
+.inner-nav-bar {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  right: 1.5rem;
+  height: 50px;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  
+  /* Glass Effect */
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  
+  /* Button Layout */
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.inner-nav-button {
+  background: none;
+  border: none;
+  color: white;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  height: 100%;
+  flex-grow: 1; /* Make buttons take up equal space */
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+  opacity: 0.7; /* Make non-active buttons slightly transparent */
+}
+
+.inner-nav-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  opacity: 1;
+}
+
+/* New style for the active button */
+.inner-nav-button.active {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 @media (max-width: 768px) {
