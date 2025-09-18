@@ -10,25 +10,25 @@ import logo from './assets/logo.svg';
 function App() {
   const items = [
     {
-      label: "About",
+      label: "Site Settings",
       textColor: "#fff",
       isGlass: true,
       glassBlur: 25,
       glassTransparency: 0.1,
       links: [
-        { label: "Company", ariaLabel: "About Company" },
-        { label: "Careers", ariaLabel: "About Careers" }
+        { label: "Option 1", ariaLabel: "About Company" },
+        { label: "Option 2", ariaLabel: "About Careers" }
       ]
     },
     {
-      label: "Projects",
+      label: "Placeholder 2",
       textColor: "#fff",
       isGlass: true,
       glassBlur: 25,
       glassTransparency: 0.1,
       links: [
-        { label: "Featured", ariaLabel: "Featured Projects" },
-        { label: "Case Studies", ariaLabel: "Project Case Studies" }
+        { label: "Button", ariaLabel: "Featured Projects" },
+        { label: "Send Cash", ariaLabel: "Project Case Studies" }
       ]
     },
     {
