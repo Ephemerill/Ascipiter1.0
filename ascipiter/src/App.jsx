@@ -33,8 +33,9 @@ function App() {
       glassBlur: 25,
       glassTransparency: 0.05,
       links: [
-        { label: "Option 1", ariaLabel: "Featured Projects" },
-        { label: "Option 2", ariaLabel: "Project Case Studies" }
+        { label: "Show AI", ariaLabel: "Featured Projects" },
+        { label: "Show Chapel Schedule", ariaLabel: "Project Case Studies" },
+        { label: "Sarcastic AI", ariaLabel: "Sarcasm" }
       ]
     },
     {
