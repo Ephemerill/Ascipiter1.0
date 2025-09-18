@@ -1,19 +1,14 @@
-// GlassSurface.tsx
+// GlassSurface.jsx
 
-import React, { useEffect, useRef, useId } from 'react';
-// Note: We will consolidate styles into App.css, so React.css is no longer needed here.
+import React, { useEffect, useRef, useId, forwardRef, useImperativeHandle } from 'react';
 
 export interface GlassSurfaceProps {
   children?: React.ReactNode;
   width?: number | string;
   height?: number | string;
   borderRadius?: number;
-  // --- NEW EASY-CONTROL PROPS ---
-  /** Controls the blur intensity for the standard CSS backdrop-filter. */
   fallbackBlur?: number;
-  /** Controls the background transparency (0.0 to 1.0) for the standard CSS backdrop-filter. */
   fallbackTransparency?: number;
-  // --- Props for the advanced SVG filter ---
   svgBorderWidth?: number;
   svgBrightness?: number;
   svgOpacity?: number;
@@ -35,15 +30,13 @@ export interface GlassSurfaceProps {
   style?: React.CSSProperties;
 }
 
-const GlassSurface: React.FC<GlassSurfaceProps> = ({
+const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(({
   children,
-  width = 200,
-  height = 80,
+  width = '100%',
+  height, // <-- FIX: Removed 'auto' default
   borderRadius = 20,
-  // --- NEW DEFAULTS ---
   fallbackBlur = 15,
   fallbackTransparency = 0.1,
-  // --- SVG Props with new names to avoid confusion ---
   svgBorderWidth = 0.07,
   svgBrightness = 50,
   svgOpacity = 0.93,
@@ -60,13 +53,15 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   mixBlendMode = 'difference',
   className = '',
   style = {}
-}) => {
+}, ref) => {
   const id = useId();
   const filterId = `glass-filter-${id}`;
   const redGradId = `red-grad-${id}`;
   const blueGradId = `blue-grad-${id}`;
 
   const containerRef = useRef<HTMLDivElement>(null);
+  useImperativeHandle(ref, () => containerRef.current!, []);
+
   const feImageRef = useRef<SVGFEImageElement>(null);
   const redChannelRef = useRef<SVGFEDisplacementMapElement>(null);
   const greenChannelRef = useRef<SVGFEDisplacementMapElement>(null);
@@ -147,17 +142,15 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
     return div.style.backdropFilter !== '';
   };
 
-  // --- STYLE MODIFICATION ---
-  // We pass the new props as CSS variables for our stylesheet to use.
   const containerStyle: React.CSSProperties = {
     ...style,
     width: typeof width === 'number' ? `${width}px` : width,
-    height: typeof height === 'number' ? `${height}px` : height,
+    // FIX: Conditionally apply height only when the prop is provided
+    ...(height !== undefined && { height: typeof height === 'number' ? `${height}px` : height }),
     borderRadius: `${borderRadius}px`,
     '--glass-frost': backgroundOpacity,
     '--glass-saturation': saturation,
     '--filter-id': `url(#${filterId})`,
-    // Pass the new, simple controls to the CSS
     '--glass-blur': `${fallbackBlur}px`,
     '--glass-transparency': fallbackTransparency,
   } as React.CSSProperties;
@@ -187,6 +180,8 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
       <div className="glass-surface__content">{children}</div>
     </div>
   );
-};
+});
+
+GlassSurface.displayName = "GlassSurface";
 
 export default GlassSurface;

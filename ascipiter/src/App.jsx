@@ -28,12 +28,12 @@ function App() {
       ]
     },
     {
-      label: "Legacy Site",
+      label: "Legacy Sites",
       bgColor: "transparent",
       textColor: "#ffffffff",
       links: [
-        { label: "Twitter", ariaLabel: "Twitter" },
-        { label: "LinkedIn", ariaLabel: "LinkedIn" }
+        { label: "Legacy", ariaLabel: "Legacy Site", href: "https://biolawizard.com/", target: "_blank" },
+        { label: "Extra Old", ariaLabel: "Extra Old Site", href: "https://google.com", target: "_blank" }
       ]
     }
   ];
@@ -58,8 +58,9 @@ function App() {
           buttonTextColor="#fff"
           ease="power3.out"
           isGlass={true}
-          glassBlur={10}
+          glassBlur={15}
           glassTransparency={0.05}
+          distortionScale={-80} // <-- This is the new prop!
           // --- SET THE CUSTOM BUTTON TEXT HERE ---
           ctaButtonText="--°F"
         />
@@ -71,6 +72,7 @@ function App() {
             borderRadius={20}
             fallbackBlur={0.1}
             fallbackTransparency={0.001}
+            distortionScale={-80}
           >
             <div className="card-content">
               <h2>Sample Menu</h2>

@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { GoArrowUpRight } from 'react-icons/go';
+import GlassSurface from './GlassSurface';
 import './App.css';
 
 const CardNav = ({
@@ -15,11 +16,11 @@ const CardNav = ({
   menuColor,
   buttonBgColor,
   buttonTextColor,
-  // --- NEW PROP FOR BUTTON TEXT ---
   ctaButtonText = 'Get Started',
   isGlass = false,
   glassBlur = 15,
-  glassTransparency = 0.1
+  glassTransparency = 0.1,
+  distortionScale = 0
 }) => {
   const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -138,74 +139,82 @@ const CardNav = ({
   const setCardRef = i => el => {
     if (el) cardsRef.current[i] = el;
   };
+  
+  const navContent = (
+    <>
+      <div className="card-nav-top">
+        <div
+          className={`hamburger-menu ${isHamburgerOpen ? 'open' : ''}`}
+          onClick={toggleMenu}
+          role="button"
+          aria-label={isExpanded ? 'Close menu' : 'Open menu'}
+          tabIndex={0}
+          style={{ color: menuColor || (isGlass ? '#fff' : '#000') }}
+        >
+          <div className="hamburger-line" />
+          <div className="hamburger-line" />
+        </div>
 
-  const navStyle = {
-    ...(isGlass
-      ? {
-          '--glass-blur': `${glassBlur}px`,
-          '--glass-transparency': glassTransparency,
-          backgroundColor: 'transparent',
-        }
-      : {
-          backgroundColor: baseColor,
-        }),
-  };
+        <div className="logo-container">
+          <img src={logo} alt={logoAlt} className="logo" />
+        </div>
+
+        <button
+          type="button"
+          className="card-nav-cta-button"
+          style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
+        >
+          {ctaButtonText}
+        </button>
+      </div>
+
+      <div className="card-nav-content" aria-hidden={!isExpanded}>
+        {(items || []).slice(0, 3).map((item, idx) => (
+          <div
+            key={`${item.label}-${idx}`}
+            className="nav-card"
+            ref={setCardRef(idx)}
+            style={{ backgroundColor: item.bgColor, color: item.textColor }}
+          >
+            <div className="nav-card-label">{item.label}</div>
+            <div className="nav-card-links">
+              {item.links?.map((lnk, i) => (
+                <a key={`${lnk.label}-${i}`} className="nav-card-link" href={lnk.href} target={lnk.target} rel={lnk.target === '_blank' ? 'noopener noreferrer' : undefined} aria-label={lnk.ariaLabel}>
+                  <GoArrowUpRight className="nav-card-link-icon" aria-hidden="true" />
+                  {lnk.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
+  const navCommonClasses = `card-nav ${isExpanded ? 'open' : ''}`;
 
   return (
     <div className={`card-nav-container ${className}`}>
-      <nav
-        ref={navRef}
-        className={`card-nav ${isGlass ? 'glass-surface glass-surface--fallback' : ''} ${isExpanded ? 'open' : ''}`}
-        style={navStyle}
-      >
-        <div className="card-nav-top">
-          <div
-            className={`hamburger-menu ${isHamburgerOpen ? 'open' : ''}`}
-            onClick={toggleMenu}
-            role="button"
-            aria-label={isExpanded ? 'Close menu' : 'Open menu'}
-            tabIndex={0}
-            style={{ color: menuColor || '#000' }}
-          >
-            <div className="hamburger-line" />
-            <div className="hamburger-line" />
-          </div>
-
-          <div className="logo-container">
-            <img src={logo} alt={logoAlt} className="logo" />
-          </div>
-
-          <button
-            type="button"
-            className="card-nav-cta-button"
-            style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
-          >
-            {/* --- USE THE PROP FOR THE BUTTON TEXT --- */}
-            {ctaButtonText}
-          </button>
-        </div>
-
-        <div className="card-nav-content" aria-hidden={!isExpanded}>
-          {(items || []).slice(0, 3).map((item, idx) => (
-            <div
-              key={`${item.label}-${idx}`}
-              className="nav-card"
-              ref={setCardRef(idx)}
-              style={{ backgroundColor: item.bgColor, color: item.textColor }}
-            >
-              <div className="nav-card-label">{item.label}</div>
-              <div className="nav-card-links">
-                {item.links?.map((lnk, i) => (
-                  <a key={`${lnk.label}-${i}`} className="nav-card-link" href={lnk.href} aria-label={lnk.ariaLabel}>
-                    <GoArrowUpRight className="nav-card-link-icon" aria-hidden="true" />
-                    {lnk.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </nav>
+      {isGlass ? (
+        <GlassSurface
+          ref={navRef}
+          className={navCommonClasses}
+          borderRadius={24} // 1.5rem from css
+          fallbackBlur={glassBlur}
+          fallbackTransparency={glassTransparency}
+          distortionScale={distortionScale}
+        >
+          {navContent}
+        </GlassSurface>
+      ) : (
+        <nav
+          ref={navRef}
+          className={navCommonClasses}
+          style={{ backgroundColor: baseColor }}
+        >
+          {navContent}
+        </nav>
+      )}
     </div>
   );
 };

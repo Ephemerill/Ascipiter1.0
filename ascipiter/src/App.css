@@ -140,6 +140,8 @@ body, html, #root {
 }
 
 .card-nav.glass-surface {
+  /* --- THIS IS THE FIX --- */
+  background-color: rgba(255, 255, 255, var(--glass-transparency, 0.1));
   box-shadow: none;
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
