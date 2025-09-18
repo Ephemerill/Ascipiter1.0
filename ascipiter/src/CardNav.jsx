@@ -15,7 +15,8 @@ const CardNav = ({
   menuColor,
   buttonBgColor,
   buttonTextColor,
-  // --- NEW PROPS FOR GLASS EFFECT ---
+  // --- NEW PROP FOR BUTTON TEXT ---
+  ctaButtonText = 'Get Started',
   isGlass = false,
   glassBlur = 15,
   glassTransparency = 0.1
@@ -138,7 +139,6 @@ const CardNav = ({
     if (el) cardsRef.current[i] = el;
   };
 
-  // --- STYLE LOGIC FOR GLASS EFFECT ---
   const navStyle = {
     ...(isGlass
       ? {
@@ -155,7 +155,6 @@ const CardNav = ({
     <div className={`card-nav-container ${className}`}>
       <nav
         ref={navRef}
-        // --- ADDED GLASS CLASSES CONDITIONALLY ---
         className={`card-nav ${isGlass ? 'glass-surface glass-surface--fallback' : ''} ${isExpanded ? 'open' : ''}`}
         style={navStyle}
       >
@@ -181,7 +180,8 @@ const CardNav = ({
             className="card-nav-cta-button"
             style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
           >
-            Get Started
+            {/* --- USE THE PROP FOR THE BUTTON TEXT --- */}
+            {ctaButtonText}
           </button>
         </div>
 

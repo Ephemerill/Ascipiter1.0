@@ -49,19 +49,20 @@ function App() {
         rotation={0}
       />
       
-      {/* --- NEW: Content area for elements that should stack --- */}
       <div className="content-area">
         <CardNav
           logo={logo}
           logoAlt="Company Logo"
           items={items}
           menuColor="#fff"
-          buttonBgColor="#111"
+          buttonBgColor="transparent"
           buttonTextColor="#fff"
           ease="power3.out"
           isGlass={true}
           glassBlur={10}
           glassTransparency={0.05}
+          // --- SET THE CUSTOM BUTTON TEXT HERE ---
+          ctaButtonText="--°F"
         />
 
         <div className="card-container">
@@ -73,11 +74,12 @@ function App() {
             fallbackTransparency={0.001}
           >
             <div className="card-content">
-              <h2>Glass Card</h2>
+              <h2>Sample Menu</h2>
               <p>
-                This card is centered on the page. You can now easily change its blur and transparency by editing the props in App.jsx.
+                This card could display the menu!
               </p>
-              <button className="card-button">Click Me</button>
+              <p>Did you know that Home Cookin' is serving grilled dog food today?</p>
+              <button className="card-button">Explain This Pretty Please</button>
             </div>
           </GlassSurface>
         </div>
