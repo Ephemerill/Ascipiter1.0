@@ -11,8 +11,10 @@ function App() {
   const items = [
     {
       label: "About",
-      bgColor: "transparent",
       textColor: "#fff",
+      isGlass: true,
+      glassBlur: 25,
+      glassTransparency: 0.1,
       links: [
         { label: "Company", ariaLabel: "About Company" },
         { label: "Careers", ariaLabel: "About Careers" }
@@ -20,8 +22,10 @@ function App() {
     },
     {
       label: "Projects",
-      bgColor: "transparent",
       textColor: "#fff",
+      isGlass: true,
+      glassBlur: 25,
+      glassTransparency: 0.1,
       links: [
         { label: "Featured", ariaLabel: "Featured Projects" },
         { label: "Case Studies", ariaLabel: "Project Case Studies" }
@@ -29,8 +33,10 @@ function App() {
     },
     {
       label: "Legacy Sites",
-      bgColor: "transparent",
       textColor: "#ffffffff",
+      isGlass: true,
+      glassBlur: 25,
+      glassTransparency: 0.1,
       links: [
         { label: "Legacy", ariaLabel: "Legacy Site", href: "https://biolawizard.com/", target: "_blank" },
         { label: "Extra Old", ariaLabel: "Extra Old Site", href: "https://google.com", target: "_blank" }
@@ -60,8 +66,7 @@ function App() {
           isGlass={true}
           glassBlur={15}
           glassTransparency={0.05}
-          distortionScale={-80} // <-- This is the new prop!
-          // --- SET THE CUSTOM BUTTON TEXT HERE ---
+          distortionScale={-80}
           ctaButtonText="--°F"
         />
 

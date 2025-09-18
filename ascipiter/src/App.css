@@ -15,9 +15,7 @@ body, html, #root {
 .App {
   width: 100%;
   height: 100%;
-  position: relative; /* Changed back to relative */
-  /* display: flex; REMOVED */
-  /* flex-direction: column; REMOVED */
+  position: relative;
 }
 
 /* 3. BACKGROUND STYLES --- UPDATED --- */
@@ -27,20 +25,20 @@ body, html, #root {
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 0; /* Ensures it's behind other content */
+  z-index: 0;
 }
 
 /* --- NEW: Content Area for elements that stack --- */
 .content-area {
-  position: absolute; /* Position over the background */
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 5; /* Above the background */
+  z-index: 5;
   display: flex;
-  flex-direction: column; /* Stack children vertically */
-  align-items: center; /* Center children horizontally */
+  flex-direction: column;
+  align-items: center;
 }
 
 
@@ -51,8 +49,7 @@ body, html, #root {
   justify-content: center;
   align-items: center;
   z-index: 10;
-  flex-grow: 1; /* Allows card container to fill remaining vertical space */
-  /* min-height: 0; REMOVED */
+  flex-grow: 1;
 }
 
 /* 5. GLASS SURFACE & CONTENT STYLES (No changes needed here) */
@@ -120,9 +117,8 @@ body, html, #root {
   max-width: 800px;
   z-index: 99;
   box-sizing: border-box;
-  /* margin: 2em auto 0 auto; REMOVED, now handled by content-area centering and padding if desired */
-  margin-top: 2em; /* Keep some top margin for spacing from the top of the screen */
-  flex-shrink: 0; /* Prevent nav from shrinking */
+  margin-top: 2em;
+  flex-shrink: 0;
 }
 
 .card-nav {
@@ -140,7 +136,6 @@ body, html, #root {
 }
 
 .card-nav.glass-surface {
-  /* --- THIS IS THE FIX --- */
   background-color: rgba(255, 255, 255, var(--glass-transparency, 0.1));
   box-shadow: none;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -251,6 +246,7 @@ body, html, #root {
   pointer-events: auto;
 }
 
+/* --- MODIFIED RULES FOR INNER CARDS --- */
 .nav-card {
   flex: 1 1 0;
   min-width: 0;
@@ -258,10 +254,25 @@ body, html, #root {
   position: relative;
   display: flex;
   flex-direction: column;
+  user-select: none;
+  /* Non-glass cards get a border, glass ones have it built-in */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Remove the default border when the card is a GlassSurface to prevent double borders */
+.nav-card.glass-surface {
+  border: none;
+}
+
+/* New class to handle padding/layout for the content inside the cards */
+.nav-card-inner-content {
+  position: relative;
+  z-index: 1;
   padding: 12px 16px;
   gap: 8px;
-  user-select: none;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
 }
 
 .nav-card-label {
@@ -285,6 +296,8 @@ body, html, #root {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  /* --- THIS IS THE FIX --- */
+  color: inherit;
 }
 
 .nav-card-link:hover {

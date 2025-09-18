@@ -140,42 +140,41 @@ const CardNav = ({
     if (el) cardsRef.current[i] = el;
   };
   
-  const navContent = (
-    <>
-      <div className="card-nav-top">
-        <div
-          className={`hamburger-menu ${isHamburgerOpen ? 'open' : ''}`}
-          onClick={toggleMenu}
-          role="button"
-          aria-label={isExpanded ? 'Close menu' : 'Open menu'}
-          tabIndex={0}
-          style={{ color: menuColor || (isGlass ? '#fff' : '#000') }}
-        >
-          <div className="hamburger-line" />
-          <div className="hamburger-line" />
-        </div>
-
-        <div className="logo-container">
-          <img src={logo} alt={logoAlt} className="logo" />
-        </div>
-
-        <button
-          type="button"
-          className="card-nav-cta-button"
-          style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
-        >
-          {ctaButtonText}
-        </button>
+  const navHeader = (
+    <div className="card-nav-top">
+      <div
+        className={`hamburger-menu ${isHamburgerOpen ? 'open' : ''}`}
+        onClick={toggleMenu}
+        role="button"
+        aria-label={isExpanded ? 'Close menu' : 'Open menu'}
+        tabIndex={0}
+        style={{ color: menuColor || (isGlass ? '#fff' : '#000') }}
+      >
+        <div className="hamburger-line" />
+        <div className="hamburger-line" />
       </div>
 
-      <div className="card-nav-content" aria-hidden={!isExpanded}>
-        {(items || []).slice(0, 3).map((item, idx) => (
-          <div
-            key={`${item.label}-${idx}`}
-            className="nav-card"
-            ref={setCardRef(idx)}
-            style={{ backgroundColor: item.bgColor, color: item.textColor }}
-          >
+      <div className="logo-container">
+        <img src={logo} alt={logoAlt} className="logo" />
+      </div>
+
+      <button
+        type="button"
+        className="card-nav-cta-button"
+        style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
+      >
+        {ctaButtonText}
+      </button>
+    </div>
+  );
+
+  const navBody = (
+    <div className="card-nav-content" aria-hidden={!isExpanded}>
+      {(items || []).slice(0, 3).map((item, idx) => {
+        const isCardGlass = item.isGlass ?? false;
+
+        const cardContent = (
+          <div className="nav-card-inner-content">
             <div className="nav-card-label">{item.label}</div>
             <div className="nav-card-links">
               {item.links?.map((lnk, i) => (
@@ -186,9 +185,37 @@ const CardNav = ({
               ))}
             </div>
           </div>
-        ))}
-      </div>
-    </>
+        );
+
+        if (isCardGlass) {
+          return (
+            <GlassSurface
+              key={`${item.label}-${idx}`}
+              ref={setCardRef(idx)}
+              className="nav-card"
+              borderRadius={12} // 0.75rem from CSS
+              fallbackBlur={item.glassBlur}
+              fallbackTransparency={item.glassTransparency}
+              distortionScale={item.distortionScale || 0}
+              style={{ color: item.textColor }}
+            >
+              {cardContent}
+            </GlassSurface>
+          );
+        }
+
+        return (
+          <div
+            key={`${item.label}-${idx}`}
+            ref={setCardRef(idx)}
+            className="nav-card"
+            style={{ backgroundColor: item.bgColor, color: item.textColor }}
+          >
+            {cardContent}
+          </div>
+        );
+      })}
+    </div>
   );
 
   const navCommonClasses = `card-nav ${isExpanded ? 'open' : ''}`;
@@ -199,12 +226,13 @@ const CardNav = ({
         <GlassSurface
           ref={navRef}
           className={navCommonClasses}
-          borderRadius={24} // 1.5rem from css
+          borderRadius={24}
           fallbackBlur={glassBlur}
           fallbackTransparency={glassTransparency}
           distortionScale={distortionScale}
         >
-          {navContent}
+          {navHeader}
+          {navBody}
         </GlassSurface>
       ) : (
         <nav
@@ -212,7 +240,8 @@ const CardNav = ({
           className={navCommonClasses}
           style={{ backgroundColor: baseColor }}
         >
-          {navContent}
+          {navHeader}
+          {navBody}
         </nav>
       )}
     </div>
