@@ -1,0 +1,110 @@
+/* App.css - The Complete and Corrected Styles */
+
+/* 1. FONT AND PAGE RESET */
+body, html, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* 2. MAIN APP CONTAINER */
+.App {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* 3. BACKGROUND STYLES */
+/* Place any canvas/animated background on the bottom layer */
+.galaxy-container, .silk-container { /* Added silk for your other component */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1; /* Lowest layer */
+}
+
+/* 4. CARD CONTAINER STYLES */
+/* This centers the card container on a higher layer */
+.card-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10; /* Higher layer, always on top of the background */
+}
+
+/* 5. GLASS SURFACE & CONTENT STYLES */
+.glass-surface {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  /* MODIFIED: The background color now uses our transparency variable.
+     The '0.1' is a fallback in case the variable isn't set. */
+  background-color: rgba(255, 255, 255, var(--glass-transparency, 0.1));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-surface__filter {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.glass-surface__content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+/* Applies the complex SVG filter */
+.glass-surface--svg {
+  backdrop-filter: var(--filter-id);
+}
+
+/* Applies the simpler, more common blur effect */
+.glass-surface--fallback {
+  /* MODIFIED: The blur now uses our variable from the props.
+     The '16px' is a fallback value. */
+  backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturation, 1.2));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturation, 1.2));
+}
+
+/* Styles for the content inside your card */
+.card-content {
+  padding: 2rem;
+  color: white;
+  text-align: center;
+}
+
+.card-content h2 {
+  margin-top: 0;
+  font-size: 2rem;
+}
+
+.card-button {
+  margin-top: 1rem;
+  padding: 10px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.card-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
