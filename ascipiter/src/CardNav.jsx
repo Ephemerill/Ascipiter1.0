@@ -1,6 +1,7 @@
+// CardNav.jsx
+
 import { useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
-// use your own icon import if react-icons is not available
 import { GoArrowUpRight } from 'react-icons/go';
 import './App.css';
 
@@ -13,7 +14,11 @@ const CardNav = ({
   baseColor = '#fff',
   menuColor,
   buttonBgColor,
-  buttonTextColor
+  buttonTextColor,
+  // --- NEW PROPS FOR GLASS EFFECT ---
+  isGlass = false,
+  glassBlur = 15,
+  glassTransparency = 0.1
 }) => {
   const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -133,9 +138,27 @@ const CardNav = ({
     if (el) cardsRef.current[i] = el;
   };
 
+  // --- STYLE LOGIC FOR GLASS EFFECT ---
+  const navStyle = {
+    ...(isGlass
+      ? {
+          '--glass-blur': `${glassBlur}px`,
+          '--glass-transparency': glassTransparency,
+          backgroundColor: 'transparent',
+        }
+      : {
+          backgroundColor: baseColor,
+        }),
+  };
+
   return (
     <div className={`card-nav-container ${className}`}>
-      <nav ref={navRef} className={`card-nav ${isExpanded ? 'open' : ''}`} style={{ backgroundColor: baseColor }}>
+      <nav
+        ref={navRef}
+        // --- ADDED GLASS CLASSES CONDITIONALLY ---
+        className={`card-nav ${isGlass ? 'glass-surface glass-surface--fallback' : ''} ${isExpanded ? 'open' : ''}`}
+        style={navStyle}
+      >
         <div className="card-nav-top">
           <div
             className={`hamburger-menu ${isHamburgerOpen ? 'open' : ''}`}

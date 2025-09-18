@@ -1,4 +1,4 @@
-/* App.css - The Complete and Corrected Styles */
+/* App.css */
 
 /* 1. FONT AND PAGE RESET */
 body, html, #root {
@@ -11,37 +11,51 @@ body, html, #root {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
-/* 2. MAIN APP CONTAINER */
+/* 2. MAIN APP CONTAINER --- UPDATED --- */
 .App {
   width: 100%;
   height: 100%;
-  position: relative;
+  position: relative; /* Changed back to relative */
+  /* display: flex; REMOVED */
+  /* flex-direction: column; REMOVED */
 }
 
-/* 3. BACKGROUND STYLES */
-.galaxy-container, .silk-container {
+/* 3. BACKGROUND STYLES --- UPDATED --- */
+.silk-container {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 1; 
+  z-index: 0; /* Ensures it's behind other content */
 }
 
-/* 4. CARD CONTAINER STYLES */
+/* --- NEW: Content Area for elements that stack --- */
+.content-area {
+  position: absolute; /* Position over the background */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5; /* Above the background */
+  display: flex;
+  flex-direction: column; /* Stack children vertically */
+  align-items: center; /* Center children horizontally */
+}
+
+
+/* 4. CARD CONTAINER STYLES --- UPDATED --- */
 .card-container {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
-  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 10;
+  flex-grow: 1; /* Allows card container to fill remaining vertical space */
+  /* min-height: 0; REMOVED */
 }
 
-/* 5. GLASS SURFACE & CONTENT STYLES */
+/* 5. GLASS SURFACE & CONTENT STYLES (No changes needed here) */
 .glass-surface {
   position: relative;
   overflow: hidden;
@@ -100,16 +114,15 @@ body, html, #root {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* 6. CARD NAV STYLES --- UPDATED SECTION --- */
+/* 6. CARD NAV STYLES --- UPDATED --- */
 .card-nav-container {
-  position: absolute;
-  top: 2em;
-  left: 50%;
-  transform: translateX(-50%);
   width: 90%;
   max-width: 800px;
   z-index: 99;
   box-sizing: border-box;
+  /* margin: 2em auto 0 auto; REMOVED, now handled by content-area centering and padding if desired */
+  margin-top: 2em; /* Keep some top margin for spacing from the top of the screen */
+  flex-shrink: 0; /* Prevent nav from shrinking */
 }
 
 .card-nav {
@@ -123,6 +136,13 @@ body, html, #root {
   position: relative;
   overflow: hidden;
   will-change: height;
+  color: #000;
+}
+
+.card-nav.glass-surface {
+  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
 }
 
 .card-nav-top {
@@ -179,7 +199,13 @@ body, html, #root {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+  filter: brightness(0) invert(1);
 }
+
+.card-nav:not(.glass-surface) .logo-container {
+  filter: none;
+}
+
 
 .logo {
   height: 28px;
@@ -209,10 +235,10 @@ body, html, #root {
   right: 0;
   top: 60px;
   bottom: 0;
-  padding: 0.75rem; /* <-- UPDATED */
+  padding: 0.75rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem; /* <-- UPDATED */
+  gap: 0.75rem;
   visibility: hidden;
   pointer-events: none;
   z-index: 1;
@@ -224,10 +250,9 @@ body, html, #root {
 }
 
 .nav-card {
-  /* height: 100%; */ /* <-- DELETED */
   flex: 1 1 0;
   min-width: 0;
-  border-radius: 0.75rem; /* <-- UPDATED */
+  border-radius: 0.75rem;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -266,7 +291,7 @@ body, html, #root {
 @media (max-width: 768px) {
   .card-nav-container {
     width: 90%;
-    top: 1.2em;
+    margin-top: 1.2em;
   }
 
   .card-nav-top {

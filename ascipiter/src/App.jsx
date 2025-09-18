@@ -1,5 +1,6 @@
+// App.jsx
+
 import React from 'react';
-import Galaxy from './Galaxy';
 import GlassSurface from './GlassSurface';
 import './App.css';
 import Silk from './Silk';
@@ -7,8 +8,6 @@ import CardNav from './CardNav';
 import logo from './assets/logo.svg';
 
 function App() {
-  // --- PROBLEM 1: This variable was declared inside the JSX ---
-  // It needs to be defined here, before the return statement.
   const items = [
     {
       label: "About",
@@ -40,8 +39,6 @@ function App() {
     }
   ];
 
-  // --- PROBLEM 2: A component can only have one return statement ---
-  // All elements must be wrapped in a single parent div or fragment.
   return (
     <div className="App">
       <Silk
@@ -52,35 +49,38 @@ function App() {
         rotation={0}
       />
       
-      {/* The CardNav component should be here */}
-      
-      <CardNav
-        logo={logo}
-        logoAlt="Company Logo"
-        items={items}
-        baseColor="#fff"
-        menuColor="#000"
-        buttonBgColor="#111"
-        buttonTextColor="#fff"
-        ease="power3.out"
-      />
+      {/* --- NEW: Content area for elements that should stack --- */}
+      <div className="content-area">
+        <CardNav
+          logo={logo}
+          logoAlt="Company Logo"
+          items={items}
+          menuColor="#fff"
+          buttonBgColor="#111"
+          buttonTextColor="#fff"
+          ease="power3.out"
+          isGlass={true}
+          glassBlur={10}
+          glassTransparency={0.05}
+        />
 
-      <div className="card-container">
-        <GlassSurface
-          width={450}
-          height="auto"
-          borderRadius={20}
-          fallbackBlur={0.1}
-          fallbackTransparency={0.001}
-        >
-          <div className="card-content">
-            <h2>Glass Card</h2>
-            <p>
-              This card is centered on the page. You can now easily change its blur and transparency by editing the props in App.jsx.
-            </p>
-            <button className="card-button">Click Me</button>
-          </div>
-        </GlassSurface>
+        <div className="card-container">
+          <GlassSurface
+            width={450}
+            height="auto"
+            borderRadius={20}
+            fallbackBlur={0.1}
+            fallbackTransparency={0.001}
+          >
+            <div className="card-content">
+              <h2>Glass Card</h2>
+              <p>
+                This card is centered on the page. You can now easily change its blur and transparency by editing the props in App.jsx.
+              </p>
+              <button className="card-button">Click Me</button>
+            </div>
+          </GlassSurface>
+        </div>
       </div>
     </div>
   );
