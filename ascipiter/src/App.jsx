@@ -16,25 +16,25 @@ function App() {
 
   const items = [
     {
-      label: "About",
+      label: "Other Things",
       textColor: "#fff",
       isGlass: true,
       glassBlur: 25,
       glassTransparency: 0.05,
       links: [
-        { label: "Company", ariaLabel: "About Company" },
-        { label: "Careers", ariaLabel: "About Careers" }
+        { label: "Donate to me :)", ariaLabel: "About Company" },
+        { label: "Something else", ariaLabel: "About Careers" }
       ]
     },
     {
-      label: "Projects",
+      label: "Settings",
       textColor: "#fff",
       isGlass: true,
       glassBlur: 25,
       glassTransparency: 0.05,
       links: [
-        { label: "Featured", ariaLabel: "Featured Projects" },
-        { label: "Case Studies", ariaLabel: "Project Case Studies" }
+        { label: "Option 1", ariaLabel: "Featured Projects" },
+        { label: "Option 2", ariaLabel: "Project Case Studies" }
       ]
     },
     {
@@ -82,29 +82,32 @@ function App() {
       case 'orders':
         return (
           <>
-            <h2>Your Orders</h2>
-            <p>You have no recent orders.</p>
-            <p>Maybe it's time to get some more grilled dog food? 🌭</p>
+            <h2>Breakfast</h2>
+            <p>Is this meal worth a swipe?</p>
+            <p>Consists mostly of scrambled eggs. You would think that it would be possible to serve this on sunday but that would be too difficult.</p>
+            <p>It is the cheapest meal but that is made up for by a lack of variety</p>
+            <p>Rating: ★★★☆☆</p>
           </>
         );
       case 'profile':
         return (
           <>
-            <h2>User Profile</h2>
-            <p>Username: CoolUser123</p>
-            <p>Member Since: 2025</p>
+            <h2>Lunch</h2>
+            <p>There are actually Poke Bowls today</p>
+            <p>Time to go buy a lottery ticket</p>
           </>
         );
       case 'settings':
         return (
           <>
-            <h2>Settings</h2>
-            <p>Enable Dark Mode: [Toggle]</p>
-            <p>Notifications: On</p>
+            <h2>Dinner</h2>
+            <p>We used up all our luck on lunch</p>
+            <p>There is nothing here for you</p>
+            <p>Pizza always has your back though</p>
           </>
         );
       default:
-        return <h2>Sample Menu</h2>;
+        return <h2>Timed Out</h2>;
     }
   };
 
@@ -155,19 +158,19 @@ function App() {
                 className={`inner-nav-button ${activePage === 'orders' ? 'active' : ''}`}
                 onClick={() => setActivePage('orders')}
               >
-                Orders
+                Breakfast
               </button>
               <button 
                 className={`inner-nav-button ${activePage === 'profile' ? 'active' : ''}`}
                 onClick={() => setActivePage('profile')}
               >
-                Profile
+                Lunch
               </button>
               <button 
                 className={`inner-nav-button ${activePage === 'settings' ? 'active' : ''}`}
                 onClick={() => setActivePage('settings')}
               >
-                Settings
+                Dinner
               </button>
             </div>
           </GlassSurface>
