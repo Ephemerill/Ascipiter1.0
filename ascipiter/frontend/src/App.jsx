@@ -2,12 +2,12 @@
 
 import React, { useState, useRef, useLayoutEffect, useEffect, useCallback } from 'react';
 import { gsap } from 'gsap';
-import GlassSurface from './GlassSurface';
+import GlassSurface from './components/GlassSurface';
 import './App.css';
-import Silk from './Silk';
-import CardNav from './CardNav';
+import Silk from './components/Silk';
+import CardNav from './components/CardNav';
 import logo from './assets/logo.svg';
-import MealItem from './MealItem';
+import MealItem from './components/MealItem';
 
 // Define the static part of the items outside the component
 const navItemsTemplate = [

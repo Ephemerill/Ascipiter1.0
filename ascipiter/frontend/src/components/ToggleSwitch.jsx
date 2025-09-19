@@ -1,7 +1,7 @@
 // frontend/src/ToggleSwitch.jsx
 
 import React from 'react';
-import './App.css'; // Styles will be in the main CSS file
+import './../App.css'; // Styles will be in the main CSS file
 
 const ToggleSwitch = ({ isToggled, onToggle, label }) => {
   const switchId = `toggle-${label.replace(/\s+/g, '-')}`;

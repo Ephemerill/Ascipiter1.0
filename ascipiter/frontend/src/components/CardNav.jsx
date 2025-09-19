@@ -5,7 +5,7 @@ import { gsap } from 'gsap';
 import { GoArrowUpRight } from 'react-icons/go';
 import GlassSurface from './GlassSurface';
 import ToggleSwitch from './ToggleSwitch';
-import './App.css';
+import './../App.css';
 
 const CardNav = ({
   logo,
