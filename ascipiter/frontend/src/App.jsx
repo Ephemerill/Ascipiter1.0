@@ -18,7 +18,7 @@ const navItemsTemplate = [
     glassBlur: 25,
     glassTransparency: 0.05,
     links: [
-      { label: "Donate to me :)", ariaLabel: "About Company" },
+      { label: "Donate to me :)", ariaLabel: "donate", href: "https://buymeacoffee.com/ephemeril", target: "_blank"},
       { label: "Something else", ariaLabel: "About Careers" }
     ]
   },
@@ -46,10 +46,54 @@ const navItemsTemplate = [
     glassTransparency: 0.05,
     links: [
       { label: "Legacy", ariaLabel: "Legacy Site", href: "https://biolawizard.com/", target: "_blank" },
-      { label: "Extra Old", ariaLabel: "Extra Old Site", href: "https://google.com", target: "_blank" }
+      { label: "Extra Old", ariaLabel: "Extra Old Site", href: "https://google.com", target: "_blank" },
+      { label: "Caf Website", ariaLabel: "Caf Website", href: "https://cafebiola.cafebonappetit.com/cafe/cafe-biola/", target: "_blank" }
     ]
   }
 ];
+
+// Helper function to capitalize each word in a string
+const capitalizeWords = (str) => {
+  if (!str) return '';
+  // Handles all-caps or mixed-case inputs by first converting to lower case
+  return str.toLowerCase().split(' ').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
+};
+
+// --- NEW: Helper function to determine the current meal period ---
+const getCurrentMealPeriod = () => {
+  const now = new Date();
+  const day = now.getDay(); // Sunday: 0, Monday: 1, ..., Saturday: 6
+  const hour = now.getHours(); // 0-23
+
+  // Weekdays (Monday - Friday)
+  if (day >= 1 && day <= 5) {
+    if (hour >= 7 && hour < 11) return 'breakfast';
+    if (hour >= 11 && hour < 16) return 'lunch';
+    // Friday has slightly different dinner hours
+    if (day === 5 && hour >= 16 && (hour < 19 || (hour === 19 && now.getMinutes() < 30))) return 'dinner';
+    // Monday - Thursday dinner
+    if (day >= 1 && day <= 4 && hour >= 16 && hour < 20) return 'dinner';
+  }
+
+  // Saturday
+  if (day === 6) {
+    if (hour >= 9 && hour < 10) return 'breakfast';
+    if (hour >= 10 && hour < 13) return 'lunch';
+    if (hour >= 17 && (hour < 19 || (hour === 19 && now.getMinutes() < 30))) return 'dinner';
+  }
+
+  // Sunday
+  if (day === 0) {
+    if ((hour > 11 || (hour === 11 && now.getMinutes() >= 30)) && (hour < 14 || (hour === 14 && now.getMinutes() < 30))) return 'lunch';
+    if (hour >= 17 && (hour < 19 || (hour === 19 && now.getMinutes() < 30))) return 'dinner';
+  }
+
+  // Default to breakfast if outside all meal times
+  return 'breakfast';
+};
+
 
 // Helper function to calculate time until the event
 const calculateTimeRemaining = (eventDate) => {
@@ -74,7 +118,8 @@ const calculateTimeRemaining = (eventDate) => {
 
 
 function App() {
-  const [activePage, setActivePage] = useState('breakfast');
+  // --- UPDATED: Set initial state by calling the new function ---
+  const [activePage, setActivePage] = useState(getCurrentMealPeriod());
   const [menuData, setMenuData] = useState(null);
   const [chapelData, setChapelData] = useState(null);
 
@@ -89,7 +134,7 @@ function App() {
   const chapelCardRef = useRef(null);
   const mealContentRef = useRef(null);
   const pageContentRef = useRef(null);
-  const chapelContentRef = useRef(null); // Ref for the chapel content wrapper
+  const chapelContentRef = useRef(null);
 
   const triggerCardResize = useCallback(() => {
     if (mealCardRef.current && mealContentRef.current) {
@@ -102,7 +147,6 @@ function App() {
     }
   }, []);
 
-  // --- NEW: Resize function for the chapel card ---
   const triggerChapelResize = useCallback(() => {
     if (chapelCardRef.current && chapelContentRef.current && isChapelVisible) {
       const targetHeight = chapelContentRef.current.scrollHeight;
@@ -158,12 +202,11 @@ function App() {
     }
   }, [activePage, isMenuLoading, triggerCardResize]);
 
-  // --- UPDATED: Show/hide animation effect ---
   useLayoutEffect(() => {
     const mealCard = mealCardRef.current;
     const chapelCard = chapelCardRef.current;
+    const chapelContent = chapelContentRef.current;
 
-    // Combined resize function to run after animation completes
     const onAnimationComplete = () => {
       triggerCardResize();
       triggerChapelResize();
@@ -172,7 +215,7 @@ function App() {
     const tl = gsap.timeline({ onComplete: onAnimationComplete });
 
     if (isChapelVisible) {
-      gsap.set(chapelCard, { display: 'block', height: 'auto' }); // Set height to auto for measurement
+      gsap.set(chapelCard, { display: 'block', height: 'auto' });
       tl.to(mealCard, { width: '65%', duration: 0.6, ease: 'power3.inOut' })
         .fromTo(chapelCard,
           { width: '0%', opacity: 0, xPercent: -20 },
@@ -181,22 +224,23 @@ function App() {
         );
     } else {
       if (chapelCard && chapelCard.style.display !== 'none') {
-        tl.to(mealCard, { width: '75%', duration: 0.6, ease: 'power3.inOut' })
+        tl.to(chapelContent, { opacity: 0, duration: 0.25, ease: 'power1.in' })
+          .to(mealCard, { width: '75%', duration: 0.6, ease: 'power3.inOut' })
           .to(chapelCard,
             { width: '0%', opacity: 0, xPercent: -20, duration: 0.6, ease: 'power3.inOut' },
             "<"
           )
-          .set(chapelCard, { display: 'none' });
+          .set(chapelCard, { display: 'none' })
+          .set(chapelContent, { opacity: 1 });
       } else {
         gsap.set(mealCard, { width: '75%' });
       }
     }
   }, [isChapelVisible, triggerCardResize, triggerChapelResize]);
 
-  // --- NEW: Effect to resize chapel card when its data loads ---
   useLayoutEffect(() => {
     if (!isChapelLoading && isChapelVisible) {
-      const timer = setTimeout(triggerChapelResize, 50); // Small delay for DOM update
+      const timer = setTimeout(triggerChapelResize, 50);
       return () => clearTimeout(timer);
     }
   }, [isChapelLoading, isChapelVisible, chapelData, triggerChapelResize]);
@@ -221,9 +265,13 @@ function App() {
           <div key={index} className="station">
             <h3 className="station-name">{station.name}</h3>
             <ul className="meal-list">
-              {station.options.map((item, itemIndex) => (
-                <MealItem key={itemIndex} item={item} onToggle={triggerCardResize} />
-              ))}
+              {station.options.map((item, itemIndex) => {
+                const displayItem = {
+                  ...item,
+                  meal: capitalizeWords(item.meal)
+                };
+                return <MealItem key={itemIndex} item={displayItem} onToggle={triggerCardResize} />;
+              })}
             </ul>
           </div>
         ))}
@@ -233,8 +281,8 @@ function App() {
   
   const renderChapelContent = () => {
     if (isChapelLoading) return <><h2 className="meal-period-title">Chapel</h2><p>Loading Chapel...</p></>;
-    if (chapelError) return <><h2 className="meal-period-title">Chapel</h2><p>Chapel events are currently unavailable.</p></>;
-    if (!chapelData || chapelData.length === 0) return <><h2 className="meal-period-title">Chapel</h2><p>No chapel events listed for today.</p></>;
+    if (chapelError) return <><h2 className="meal-period-title">Chapel</h2><p>Chapel events are currently unavailable. Well this is awkward.</p></>;
+    if (!chapelData || chapelData.length === 0) return <><h2 className="meal-period-title">Chapel</h2><p style={{ textAlign: 'center' }}>No chapel events listed for today. Well this is awkward.</p></>;
 
     const now = new Date();
     const upcomingEvents = chapelData
@@ -277,7 +325,7 @@ function App() {
               );
             })
           ) : (
-            <p>No upcoming chapel events found.</p>
+            <p>No upcoming chapel events found. Well this is awkward.</p>
           )}
         </div>
       </>
@@ -335,7 +383,6 @@ function App() {
             </div>
           </GlassSurface>
           
-          {/* --- UPDATED: Attaching the new ref here --- */}
           <GlassSurface ref={chapelCardRef} borderRadius={20} className="chapel-card">
             <div className="card-content chapel-card-wrapper" ref={chapelContentRef}>{renderChapelContent()}</div>
           </GlassSurface>
