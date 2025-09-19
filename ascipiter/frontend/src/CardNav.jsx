@@ -1,9 +1,10 @@
-// CardNav.jsx
+// frontend/src/CardNav.jsx
 
-import { useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { GoArrowUpRight } from 'react-icons/go';
 import GlassSurface from './GlassSurface';
+import ToggleSwitch from './ToggleSwitch';
 import './App.css';
 
 const CardNav = ({
@@ -20,7 +21,9 @@ const CardNav = ({
   isGlass = false,
   glassBlur = 15,
   glassTransparency = 0.1,
-  distortionScale = 0
+  distortionScale = 0,
+  isChapelVisible,
+  onToggleChapel,
 }) => {
   const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -31,7 +34,6 @@ const CardNav = ({
   const calculateHeight = () => {
     const navEl = navRef.current;
     if (!navEl) return 260;
-
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     if (isMobile) {
       const contentEl = navEl.querySelector('.card-nav-content');
@@ -40,23 +42,18 @@ const CardNav = ({
         const wasPointerEvents = contentEl.style.pointerEvents;
         const wasPosition = contentEl.style.position;
         const wasHeight = contentEl.style.height;
-
         contentEl.style.visibility = 'visible';
         contentEl.style.pointerEvents = 'auto';
         contentEl.style.position = 'static';
         contentEl.style.height = 'auto';
-
         contentEl.offsetHeight;
-
         const topBar = 60;
         const padding = 16;
         const contentHeight = contentEl.scrollHeight;
-
         contentEl.style.visibility = wasVisible;
         contentEl.style.pointerEvents = wasPointerEvents;
         contentEl.style.position = wasPosition;
         contentEl.style.height = wasHeight;
-
         return topBar + contentHeight + padding;
       }
     }
@@ -66,42 +63,33 @@ const CardNav = ({
   const createTimeline = () => {
     const navEl = navRef.current;
     if (!navEl) return null;
-
     gsap.set(navEl, { height: 60, overflow: 'hidden' });
     gsap.set(cardsRef.current, { y: 50, opacity: 0 });
-
     const tl = gsap.timeline({ paused: true });
-
     tl.to(navEl, {
       height: calculateHeight,
       duration: 0.4,
       ease
     });
-
     tl.to(cardsRef.current, { y: 0, opacity: 1, duration: 0.4, ease, stagger: 0.08 }, '-=0.1');
-
     return tl;
   };
 
   useLayoutEffect(() => {
     const tl = createTimeline();
     tlRef.current = tl;
-
     return () => {
       tl?.kill();
       tlRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ease, items]);
+  }, [ease]);
 
   useLayoutEffect(() => {
     const handleResize = () => {
       if (!tlRef.current) return;
-
       if (isExpanded) {
         const newHeight = calculateHeight();
         gsap.set(navRef.current, { height: newHeight });
-
         tlRef.current.kill();
         const newTl = createTimeline();
         if (newTl) {
@@ -116,10 +104,8 @@ const CardNav = ({
         }
       }
     };
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isExpanded]);
 
   const toggleMenu = () => {
@@ -139,7 +125,13 @@ const CardNav = ({
   const setCardRef = i => el => {
     if (el) cardsRef.current[i] = el;
   };
-  
+
+  // Dynamically update the label of the chapel toggle based on its state
+  const updatedItems = [...items];
+  if (updatedItems[1] && updatedItems[1].links[1]) {
+    updatedItems[1].links[1].label = isChapelVisible ? "Hide Chapel Schedule" : "Show Chapel Schedule";
+  }
+
   const navHeader = (
     <div className="card-nav-top">
       <div
@@ -153,11 +145,9 @@ const CardNav = ({
         <div className="hamburger-line" />
         <div className="hamburger-line" />
       </div>
-
       <div className="logo-container">
         <img src={logo} alt={logoAlt} className="logo" />
       </div>
-
       <button
         type="button"
         className="card-nav-cta-button"
@@ -170,19 +160,30 @@ const CardNav = ({
 
   const navBody = (
     <div className="card-nav-content" aria-hidden={!isExpanded}>
-      {(items || []).slice(0, 3).map((item, idx) => {
+      {updatedItems.slice(0, 3).map((item, idx) => {
         const isCardGlass = item.isGlass ?? false;
-
         const cardContent = (
           <div className="nav-card-inner-content">
             <div className="nav-card-label">{item.label}</div>
             <div className="nav-card-links">
-              {item.links?.map((lnk, i) => (
-                <a key={`${lnk.label}-${i}`} className="nav-card-link" href={lnk.href} target={lnk.target} rel={lnk.target === '_blank' ? 'noopener noreferrer' : undefined} aria-label={lnk.ariaLabel}>
-                  <GoArrowUpRight className="nav-card-link-icon" aria-hidden="true" />
-                  {lnk.label}
-                </a>
-              ))}
+              {item.links?.map((lnk, i) => {
+                if (lnk.type === 'toggle') {
+                  return (
+                    <ToggleSwitch
+                      key={`${lnk.label}-${i}`}
+                      label={lnk.label}
+                      isToggled={isChapelVisible}
+                      onToggle={onToggleChapel}
+                    />
+                  );
+                }
+                return (
+                  <a key={`${lnk.label}-${i}`} className="nav-card-link" href={lnk.href} target={lnk.target} rel={lnk.target === '_blank' ? 'noopener noreferrer' : undefined} aria-label={lnk.ariaLabel}>
+                    <GoArrowUpRight className="nav-card-link-icon" aria-hidden="true" />
+                    {lnk.label}
+                  </a>
+                );
+              })}
             </div>
           </div>
         );
@@ -193,7 +194,7 @@ const CardNav = ({
               key={`${item.label}-${idx}`}
               ref={setCardRef(idx)}
               className="nav-card"
-              borderRadius={12} // 0.75rem from CSS
+              borderRadius={12}
               fallbackBlur={item.glassBlur}
               fallbackTransparency={item.glassTransparency}
               distortionScale={item.distortionScale || 0}

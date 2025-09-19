@@ -42,19 +42,29 @@ body, html, #root {
 
 /* 4. CARD CONTAINER STYLES --- UPDATED --- */
 .card-container {
-  width: 100%;
+  width: 90%;
+  max-width: 960px;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   z-index: 10;
   flex-grow: 1;
   padding-bottom: 0;
   margin-top: 2rem;
+  gap: 2rem;
 }
 
-.card-container > .glass-surface {
-  width: 90%;
-  max-width: 720px;
+.meal-card {
+  width: 75%;
+  min-width: 0;
+}
+
+.chapel-card {
+  width: 0%;
+  min-width: 0;
+  height: fit-content;
+  opacity: 0;
+  display: none;
 }
 
 
@@ -96,6 +106,10 @@ body, html, #root {
   box-sizing: border-box;
   padding: 2rem 2rem 6rem 2rem;
   width: 100%;
+}
+
+.chapel-card-wrapper {
+  padding: 2rem;
 }
 
 .card-content h2 {
@@ -307,6 +321,47 @@ body, html, #root {
   opacity: 0.75;
 }
 
+/* --- NEW STYLES FOR TOGGLE SWITCH --- */
+.toggle-switch-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 2px 0;
+}
+.toggle-switch-container label {
+  cursor: pointer;
+}
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  transition: background-color 0.3s ease;
+}
+.toggle-switch.on {
+  background-color: #fff;
+}
+.toggle-handle {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.3s ease;
+}
+.toggle-switch.on .toggle-handle {
+  transform: translateX(20px);
+  background-color: #333;
+}
+.toggle-checkbox {
+  display: none;
+}
+
 .inner-nav-bar {
   position: absolute;
   bottom: 1.5rem;
@@ -315,11 +370,9 @@ body, html, #root {
   height: 50px;
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  
   background-color: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
-  
   display: flex;
   align-items: center;
   justify-content: space-around;
@@ -371,8 +424,6 @@ body, html, #root {
   margin: 0;
 }
 
-/* --- STYLES for MealItem component --- */
-
 .meal-item {
   margin-bottom: 0.5rem;
 }
@@ -410,7 +461,6 @@ body, html, #root {
   border-width: 0px;
   border-style: solid;
   border-color: rgba(255, 255, 255, 0.1);
-  /* --- FIX: Add the backdrop-filter property for the glass effect --- */
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -423,7 +473,146 @@ body, html, #root {
   padding: 0.75rem 1rem;
 }
 
+/* --- UPDATED STYLES FOR CHAPEL DISPLAY --- */
+.chapel-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-start; /* Prevents items from stretching to equal height */
+}
+
+.chapel-event-card {
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
+  min-height: 0;
+  width: 100%; /* Ensures card takes full width of the list container */
+}
+
+.chapel-event-content {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; 
+}
+
+.chapel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0; 
+  gap: 0.5rem;
+}
+
+.chapel-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.chapel-countdown {
+  font-size: 0.8rem;
+  font-weight: 500;
+  opacity: 0.8;
+  background-color: rgba(0,0,0,0.2);
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.chapel-datetime p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.chapel-date,
+.chapel-time {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  margin: 0;
+}
+
+.chapel-description {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin: 0; 
+}
+
+/* Scrollbar styles are no longer needed but harmless to keep */
+.chapel-events-list::-webkit-scrollbar {
+  width: 8px;
+}
+.chapel-events-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chapel-events-list::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
 
 @media (max-width: 768px) {
-  /* ... (rest of media queries are unchanged) ... */
+  .card-container {
+    flex-direction: column;
+    align-items: center;
+  }
+  .meal-card,
+  .chapel-card {
+    width: 100% !important;
+    flex: none !important;
+  }
+  
+  .card-nav-container {
+    width: 90%;
+    margin-top: 1.2em;
+  }
+
+  .card-nav-top {
+    padding: 0 1rem;
+    justify-content: space-between;
+  }
+
+  .hamburger-menu {
+    order: 2;
+  }
+
+  .logo-container {
+    position: static;
+    transform: none;
+    order: 1;
+  }
+
+  .card-nav-cta-button {
+    display: none;
+  }
+
+  .card-nav-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 0.5rem;
+    bottom: 0;
+    justify-content: flex-start;
+  }
+
+  .nav-card {
+    height: auto;
+    min-height: 60px;
+    flex: 1 1 auto;
+    max-height: none;
+  }
+
+  .nav-card-label {
+    font-size: 18px;
+  }
+
+  .nav-card-link {
+    font-size: 15px;
+  }
 }

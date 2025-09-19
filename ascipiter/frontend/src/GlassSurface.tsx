@@ -28,12 +28,13 @@ export interface GlassSurfaceProps {
     | 'saturation' | 'color' | 'luminosity' | 'plus-darker' | 'plus-lighter';
   className?: string;
   style?: React.CSSProperties;
+  contentHeightAuto?: boolean; // <-- NEW PROP
 }
 
 const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(({
   children,
   width = '100%',
-  height, // <-- FIX: Removed 'auto' default
+  height,
   borderRadius = 20,
   fallbackBlur = 15,
   fallbackTransparency = 0.1,
@@ -52,7 +53,8 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(({
   yChannel = 'G',
   mixBlendMode = 'difference',
   className = '',
-  style = {}
+  style = {},
+  contentHeightAuto = false // <-- NEW PROP with default value
 }, ref) => {
   const id = useId();
   const filterId = `glass-filter-${id}`;
@@ -145,7 +147,6 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(({
   const containerStyle: React.CSSProperties = {
     ...style,
     width: typeof width === 'number' ? `${width}px` : width,
-    // FIX: Conditionally apply height only when the prop is provided
     ...(height !== undefined && { height: typeof height === 'number' ? `${height}px` : height }),
     borderRadius: `${borderRadius}px`,
     '--glass-frost': backgroundOpacity,
@@ -177,7 +178,13 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(({
           </filter>
         </defs>
       </svg>
-      <div className="glass-surface__content">{children}</div>
+      {/* THIS IS THE KEY CHANGE: applying height via inline style */}
+      <div 
+        className="glass-surface__content" 
+        style={{ height: contentHeightAuto ? 'auto' : '100%' }}
+      >
+        {children}
+      </div>
     </div>
   );
 });
