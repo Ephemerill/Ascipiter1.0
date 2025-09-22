@@ -61,7 +61,7 @@ const capitalizeWords = (str) => {
   ).join(' ');
 };
 
-// --- NEW: Helper function to determine the current meal period ---
+// Helper function to determine the current meal period
 const getCurrentMealPeriod = () => {
   const now = new Date();
   const day = now.getDay(); // Sunday: 0, Monday: 1, ..., Saturday: 6
@@ -116,9 +116,56 @@ const calculateTimeRemaining = (eventDate) => {
   }
 };
 
+// Robust date parsing function
+const parseChapelDate = (timeString) => {
+  if (!timeString) return null;
+
+  const cleanedString = timeString.replace(' at ', ' ').replace(/,,/g, ',');
+  
+  // --- UPDATED REGEX ---
+  // This new regex now correctly handles the optional "Day, " at the start of the string.
+  // It captures the Month, Day, Year, Hour, Minute, and AM/PM.
+  const parts = cleanedString.match(/^(?:\w{3},\s)?(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{2})\s(AM|PM)/i);
+
+  if (!parts) {
+    console.error("Failed to parse date string with regex:", timeString);
+    return null; 
+  }
+
+  // Because the optional group "(?:\w{3},\s)?" is non-capturing, our capture groups still start at index 1
+  const [, monthStr, day, year, hourStr, minute, ampm] = parts;
+  const monthMap = { "January": 0, "February": 1, "March": 2, "April": 3, "May": 4, "June": 5, "July": 6, "August": 7, "September": 8, "October": 9, "November": 10, "December": 11 };
+  
+  // Handle 3-letter month abbreviations
+  const fullMonthStr = Object.keys(monthMap).find(m => m.startsWith(monthStr));
+  if (!fullMonthStr) {
+    console.error(`Could not find full month for abbreviation: ${monthStr}`);
+    return null;
+  }
+  const month = monthMap[fullMonthStr];
+
+  let hour = parseInt(hourStr, 10);
+
+  // Convert 12-hour clock to 24-hour
+  if (ampm.toUpperCase() === 'PM' && hour !== 12) {
+    hour += 12;
+  }
+  if (ampm.toUpperCase() === 'AM' && hour === 12) { // Handle midnight case (12 AM is hour 0)
+    hour = 0;
+  }
+
+  const eventDate = new Date(year, month, parseInt(day, 10), hour, parseInt(minute, 10));
+  
+  if (isNaN(eventDate.getTime())) {
+      console.error("Created an invalid date from:", timeString);
+      return null;
+  }
+  
+  return eventDate;
+};
+
 
 function App() {
-  // --- UPDATED: Set initial state by calling the new function ---
   const [activePage, setActivePage] = useState(getCurrentMealPeriod());
   const [menuData, setMenuData] = useState(null);
   const [chapelData, setChapelData] = useState(null);
@@ -162,13 +209,17 @@ function App() {
     const fetchMenu = async () => {
       setIsMenuLoading(true);
       try {
-        const response = await fetch('http://127.0.0.1:5001/api/menu');
-        if (!response.ok) throw new Error(`HTTP error!`);
+        const response = await fetch('/api/menu');
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
         setMenuData(data);
         setMenuError(null);
       } catch (e) {
-        setMenuError(e.message);
+        if (e instanceof SyntaxError) {
+          setMenuError("Failed to parse server response. Expected JSON.");
+        } else {
+          setMenuError(e.message);
+        }
       } finally {
         setIsMenuLoading(false);
       }
@@ -177,13 +228,17 @@ function App() {
     const fetchChapel = async () => {
       setIsChapelLoading(true);
       try {
-        const response = await fetch('http://127.0.0.1:5001/api/chapel');
-        if (!response.ok) throw new Error(`HTTP error!`);
+        const response = await fetch('/api/chapel');
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
         setChapelData(data);
         setChapelError(null);
       } catch (e) {
-        setChapelError(e.message);
+        if (e instanceof SyntaxError) {
+          setChapelError("Failed to parse server response. Expected JSON.");
+        } else {
+          setChapelError(e.message);
+        }
       } finally {
         setIsChapelLoading(false);
       }
@@ -287,11 +342,10 @@ function App() {
     const now = new Date();
     const upcomingEvents = chapelData
       .map(event => {
-        const parsableDateString = event.time.replace(' at ', ' ');
-        const eventDate = new Date(parsableDateString);
+        const eventDate = parseChapelDate(event.time);
         return { ...event, dateObject: eventDate };
       })
-      .filter(event => event.dateObject > now && !isNaN(event.dateObject.valueOf()))
+      .filter(event => event.dateObject && event.dateObject > now)
       .sort((a, b) => a.dateObject - b.dateObject)
       .slice(0, 5);
 
