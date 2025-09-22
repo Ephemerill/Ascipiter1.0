@@ -9,7 +9,7 @@ import CardNav from './components/CardNav';
 import logo from './assets/logo.svg';
 import MealItem from './components/MealItem';
 
-// Define the static part of the items outside the component
+// --- MODIFIED: Added 'type' and 'id' to the Show AI link ---
 const navItemsTemplate = [
   {
     label: "Other Things",
@@ -29,11 +29,17 @@ const navItemsTemplate = [
     glassBlur: 25,
     glassTransparency: 0.05,
     links: [
-      { label: "Show AI", ariaLabel: "Featured Projects" },
+      { 
+        label: "Show AI", 
+        ariaLabel: "Toggle AI Helper", 
+        type: 'toggle', 
+        id: 'ai-toggle' 
+      },
       {
-        label: "Show Chapel Schedule", // The label will be updated dynamically in CardNav
+        label: "Show Chapel Schedule",
         ariaLabel: "Toggle Chapel Schedule display",
         type: 'toggle',
+        id: 'chapel-toggle'
       },
       { label: "Sarcastic AI", ariaLabel: "Sarcasm" }
     ]
@@ -55,7 +61,6 @@ const navItemsTemplate = [
 // Helper function to capitalize each word in a string
 const capitalizeWords = (str) => {
   if (!str) return '';
-  // Handles all-caps or mixed-case inputs by first converting to lower case
   return str.toLowerCase().split(' ').map(word => 
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ');
@@ -64,33 +69,27 @@ const capitalizeWords = (str) => {
 // Helper function to determine the current meal period
 const getCurrentMealPeriod = () => {
   const now = new Date();
-  const day = now.getDay(); // Sunday: 0, Monday: 1, ..., Saturday: 6
-  const hour = now.getHours(); // 0-23
+  const day = now.getDay();
+  const hour = now.getHours();
 
-  // Weekdays (Monday - Friday)
   if (day >= 1 && day <= 5) {
     if (hour >= 7 && hour < 11) return 'breakfast';
     if (hour >= 11 && hour < 16) return 'lunch';
-    // Friday has slightly different dinner hours
     if (day === 5 && hour >= 16 && (hour < 19 || (hour === 19 && now.getMinutes() < 30))) return 'dinner';
-    // Monday - Thursday dinner
     if (day >= 1 && day <= 4 && hour >= 16 && hour < 20) return 'dinner';
   }
 
-  // Saturday
   if (day === 6) {
     if (hour >= 9 && hour < 10) return 'breakfast';
     if (hour >= 10 && hour < 13) return 'lunch';
     if (hour >= 17 && (hour < 19 || (hour === 19 && now.getMinutes() < 30))) return 'dinner';
   }
 
-  // Sunday
   if (day === 0) {
     if ((hour > 11 || (hour === 11 && now.getMinutes() >= 30)) && (hour < 14 || (hour === 14 && now.getMinutes() < 30))) return 'lunch';
     if (hour >= 17 && (hour < 19 || (hour === 19 && now.getMinutes() < 30))) return 'dinner';
   }
 
-  // Default to breakfast if outside all meal times
   return 'breakfast';
 };
 
@@ -100,9 +99,7 @@ const calculateTimeRemaining = (eventDate) => {
   const now = new Date();
   const diffMillis = eventDate.getTime() - now.getTime();
 
-  if (diffMillis <= 0) {
-    return "Event in progress";
-  }
+  if (diffMillis <= 0) return "Event in progress";
 
   const diffHours = diffMillis / (1000 * 60 * 60);
 
@@ -119,12 +116,7 @@ const calculateTimeRemaining = (eventDate) => {
 // Robust date parsing function
 const parseChapelDate = (timeString) => {
   if (!timeString) return null;
-
   const cleanedString = timeString.replace(' at ', ' ').replace(/,,/g, ',');
-  
-  // --- UPDATED REGEX ---
-  // This new regex now correctly handles the optional "Day, " at the start of the string.
-  // It captures the Month, Day, Year, Hour, Minute, and AM/PM.
   const parts = cleanedString.match(/^(?:\w{3},\s)?(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{2})\s(AM|PM)/i);
 
   if (!parts) {
@@ -132,35 +124,22 @@ const parseChapelDate = (timeString) => {
     return null; 
   }
 
-  // Because the optional group "(?:\w{3},\s)?" is non-capturing, our capture groups still start at index 1
   const [, monthStr, day, year, hourStr, minute, ampm] = parts;
   const monthMap = { "January": 0, "February": 1, "March": 2, "April": 3, "May": 4, "June": 5, "July": 6, "August": 7, "September": 8, "October": 9, "November": 10, "December": 11 };
-  
-  // Handle 3-letter month abbreviations
   const fullMonthStr = Object.keys(monthMap).find(m => m.startsWith(monthStr));
   if (!fullMonthStr) {
     console.error(`Could not find full month for abbreviation: ${monthStr}`);
     return null;
   }
   const month = monthMap[fullMonthStr];
-
   let hour = parseInt(hourStr, 10);
-
-  // Convert 12-hour clock to 24-hour
-  if (ampm.toUpperCase() === 'PM' && hour !== 12) {
-    hour += 12;
-  }
-  if (ampm.toUpperCase() === 'AM' && hour === 12) { // Handle midnight case (12 AM is hour 0)
-    hour = 0;
-  }
-
+  if (ampm.toUpperCase() === 'PM' && hour !== 12) hour += 12;
+  if (ampm.toUpperCase() === 'AM' && hour === 12) hour = 0;
   const eventDate = new Date(year, month, parseInt(day, 10), hour, parseInt(minute, 10));
-  
   if (isNaN(eventDate.getTime())) {
-      console.error("Created an invalid date from:", timeString);
-      return null;
+    console.error("Created an invalid date from:", timeString);
+    return null;
   }
-  
   return eventDate;
 };
 
@@ -176,6 +155,7 @@ function App() {
   const [chapelError, setChapelError] = useState(null);
 
   const [isChapelVisible, setIsChapelVisible] = useState(false);
+  const [isAiVisible, setIsAiVisible] = useState(false);
 
   const mealCardRef = useRef(null);
   const chapelCardRef = useRef(null);
@@ -186,22 +166,14 @@ function App() {
   const triggerCardResize = useCallback(() => {
     if (mealCardRef.current && mealContentRef.current) {
       const targetHeight = mealContentRef.current.scrollHeight;
-      gsap.to(mealCardRef.current, {
-        height: targetHeight,
-        duration: 0.5,
-        ease: 'power2.inOut',
-      });
+      gsap.to(mealCardRef.current, { height: targetHeight, duration: 0.5, ease: 'power2.inOut' });
     }
   }, []);
 
   const triggerChapelResize = useCallback(() => {
     if (chapelCardRef.current && chapelContentRef.current && isChapelVisible) {
       const targetHeight = chapelContentRef.current.scrollHeight;
-      gsap.to(chapelCardRef.current, {
-        height: targetHeight,
-        duration: 0.5,
-        ease: 'power2.inOut',
-      });
+      gsap.to(chapelCardRef.current, { height: targetHeight, duration: 0.5, ease: 'power2.inOut' });
     }
   }, [isChapelVisible]);
 
@@ -243,7 +215,6 @@ function App() {
         setIsChapelLoading(false);
       }
     };
-
     fetchMenu();
     fetchChapel();
   }, []);
@@ -258,33 +229,33 @@ function App() {
   }, [activePage, isMenuLoading, triggerCardResize]);
 
   useLayoutEffect(() => {
-    const mealCard = mealCardRef.current;
-    const chapelCard = chapelCardRef.current;
-    const chapelContent = chapelContentRef.current;
+    if (isAiVisible) {
+      gsap.fromTo(".explain-button", 
+        { opacity: 0, scale: 0.8 }, 
+        { 
+          opacity: 1, 
+          scale: 1, 
+          duration: 0.5, 
+          stagger: 0.05, 
+          ease: 'back.out(1.7)' 
+        }
+      );
+    }
+  }, [isAiVisible, activePage, menuData]);
 
-    const onAnimationComplete = () => {
-      triggerCardResize();
-      triggerChapelResize();
-    };
-
+  useLayoutEffect(() => {
+    const mealCard = mealCardRef.current, chapelCard = chapelCardRef.current, chapelContent = chapelContentRef.current;
+    const onAnimationComplete = () => { triggerCardResize(); triggerChapelResize(); };
     const tl = gsap.timeline({ onComplete: onAnimationComplete });
-
     if (isChapelVisible) {
       gsap.set(chapelCard, { display: 'block', height: 'auto' });
       tl.to(mealCard, { width: '65%', duration: 0.6, ease: 'power3.inOut' })
-        .fromTo(chapelCard,
-          { width: '0%', opacity: 0, xPercent: -20 },
-          { width: '32%', opacity: 1, xPercent: 0, duration: 0.6, ease: 'power3.inOut' },
-          "<"
-        );
+        .fromTo(chapelCard, { width: '0%', opacity: 0, xPercent: -20 }, { width: '32%', opacity: 1, xPercent: 0, duration: 0.6, ease: 'power3.inOut' }, "<");
     } else {
       if (chapelCard && chapelCard.style.display !== 'none') {
         tl.to(chapelContent, { opacity: 0, duration: 0.25, ease: 'power1.in' })
           .to(mealCard, { width: '75%', duration: 0.6, ease: 'power3.inOut' })
-          .to(chapelCard,
-            { width: '0%', opacity: 0, xPercent: -20, duration: 0.6, ease: 'power3.inOut' },
-            "<"
-          )
+          .to(chapelCard, { width: '0%', opacity: 0, xPercent: -20, duration: 0.6, ease: 'power3.inOut' }, "<")
           .set(chapelCard, { display: 'none' })
           .set(chapelContent, { opacity: 1 });
       } else {
@@ -300,15 +271,12 @@ function App() {
     }
   }, [isChapelLoading, isChapelVisible, chapelData, triggerChapelResize]);
 
-
   const renderCardContent = () => {
     if (isMenuLoading) return <h2 style={{ textAlign: 'center' }}>Loading Menu</h2>;
     if (menuError) return <><h2>Oops!</h2><p>Could not load the menu: {menuError}</p></>;
     if (!menuData) return <h2>No Menu Data</h2>;
-
     const mealPeriodData = menuData[activePage];
     const mealPeriodName = activePage.charAt(0).toUpperCase() + activePage.slice(1);
-
     if (!mealPeriodData || mealPeriodData.length === 0) {
       return <><h2 className="meal-period-title">{mealPeriodName}</h2><p>No items are listed for this meal today.</p></>;
     }
@@ -318,13 +286,17 @@ function App() {
         <h2 className="meal-period-title">{mealPeriodName}</h2>
         {mealPeriodData.map((station, index) => (
           <div key={index} className="station">
-            <h3 className="station-name">{station.name}</h3>
+            <div className="station-header">
+              <h3 className="station-name">{station.name}</h3>
+              {isAiVisible && (
+                <div className="explain-button-container">
+                  <button className="explain-button">explain this</button>
+                </div>
+              )}
+            </div>
             <ul className="meal-list">
               {station.options.map((item, itemIndex) => {
-                const displayItem = {
-                  ...item,
-                  meal: capitalizeWords(item.meal)
-                };
+                const displayItem = { ...item, meal: capitalizeWords(item.meal) };
                 return <MealItem key={itemIndex} item={displayItem} onToggle={triggerCardResize} />;
               })}
             </ul>
@@ -407,6 +379,8 @@ function App() {
             ctaButtonText="--°F"
             isChapelVisible={isChapelVisible}
             onToggleChapel={() => setIsChapelVisible(!isChapelVisible)}
+            isAiVisible={isAiVisible}
+            onToggleAi={() => setIsAiVisible(!isAiVisible)}
         />
         <div className="card-container">
           <GlassSurface ref={mealCardRef} borderRadius={20} className="meal-card" distortionScale={-80}>
@@ -415,28 +389,12 @@ function App() {
                 {renderCardContent()}
               </div>
               <div className="inner-nav-bar">
-                <button 
-                  className={`inner-nav-button ${activePage === 'breakfast' ? 'active' : ''}`}
-                  onClick={() => setActivePage('breakfast')}
-                >
-                  Breakfast
-                </button>
-                <button 
-                  className={`inner-nav-button ${activePage === 'lunch' ? 'active' : ''}`}
-                  onClick={() => setActivePage('lunch')}
-                >
-                  Lunch
-                </button>
-                <button 
-                  className={`inner-nav-button ${activePage === 'dinner' ? 'active' : ''}`}
-                  onClick={() => setActivePage('dinner')}
-                >
-                  Dinner
-                </button>
+                <button className={`inner-nav-button ${activePage === 'breakfast' ? 'active' : ''}`} onClick={() => setActivePage('breakfast')}>Breakfast</button>
+                <button className={`inner-nav-button ${activePage === 'lunch' ? 'active' : ''}`} onClick={() => setActivePage('lunch')}>Lunch</button>
+                <button className={`inner-nav-button ${activePage === 'dinner' ? 'active' : ''}`} onClick={() => setActivePage('dinner')}>Dinner</button>
               </div>
             </div>
           </GlassSurface>
-          
           <GlassSurface ref={chapelCardRef} borderRadius={20} className="chapel-card">
             <div className="card-content chapel-card-wrapper" ref={chapelContentRef}>{renderChapelContent()}</div>
           </GlassSurface>

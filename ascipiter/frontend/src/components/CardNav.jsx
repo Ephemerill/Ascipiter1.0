@@ -24,6 +24,8 @@ const CardNav = ({
   distortionScale = 0,
   isChapelVisible,
   onToggleChapel,
+  isAiVisible,
+  onToggleAi,
 }) => {
   const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -78,10 +80,7 @@ const CardNav = ({
   useLayoutEffect(() => {
     const tl = createTimeline();
     tlRef.current = tl;
-    return () => {
-      tl?.kill();
-      tlRef.current = null;
-    };
+    return () => { tl?.kill(); tlRef.current = null; };
   }, [ease]);
 
   useLayoutEffect(() => {
@@ -126,12 +125,6 @@ const CardNav = ({
     if (el) cardsRef.current[i] = el;
   };
 
-  // Dynamically update the label of the chapel toggle based on its state
-  const updatedItems = [...items];
-  if (updatedItems[1] && updatedItems[1].links[1]) {
-    updatedItems[1].links[1].label = isChapelVisible ? "Hide Chapel Schedule" : "Show Chapel Schedule";
-  }
-
   const navHeader = (
     <div className="card-nav-top">
       <div
@@ -160,7 +153,7 @@ const CardNav = ({
 
   const navBody = (
     <div className="card-nav-content" aria-hidden={!isExpanded}>
-      {updatedItems.slice(0, 3).map((item, idx) => {
+      {items.slice(0, 3).map((item, idx) => {
         const isCardGlass = item.isGlass ?? false;
         const cardContent = (
           <div className="nav-card-inner-content">
@@ -168,15 +161,26 @@ const CardNav = ({
             <div className="nav-card-links">
               {item.links?.map((lnk, i) => {
                 if (lnk.type === 'toggle') {
+                  const isToggled = lnk.id === 'ai-toggle' ? isAiVisible : isChapelVisible;
+                  const onToggle = lnk.id === 'ai-toggle' ? onToggleAi : onToggleChapel;
+                  let label;
+
+                  if (lnk.id === 'ai-toggle') {
+                    label = isAiVisible ? 'Hide AI Helper' : 'Show AI Helper';
+                  } else {
+                    label = isChapelVisible ? 'Hide Chapel Schedule' : 'Show Chapel Schedule';
+                  }
+
                   return (
                     <ToggleSwitch
-                      key={`${lnk.label}-${i}`}
-                      label={lnk.label}
-                      isToggled={isChapelVisible}
-                      onToggle={onToggleChapel}
+                      key={lnk.id}
+                      label={label}
+                      isToggled={isToggled}
+                      onToggle={onToggle}
                     />
                   );
                 }
+                
                 return (
                   <a key={`${lnk.label}-${i}`} className="nav-card-link" href={lnk.href} target={lnk.target} rel={lnk.target === '_blank' ? 'noopener noreferrer' : undefined} aria-label={lnk.ariaLabel}>
                     <GoArrowUpRight className="nav-card-link-icon" aria-hidden="true" />
@@ -224,23 +228,12 @@ const CardNav = ({
   return (
     <div className={`card-nav-container ${className}`}>
       {isGlass ? (
-        <GlassSurface
-          ref={navRef}
-          className={navCommonClasses}
-          borderRadius={24}
-          fallbackBlur={glassBlur}
-          fallbackTransparency={glassTransparency}
-          distortionScale={distortionScale}
-        >
+        <GlassSurface ref={navRef} className={navCommonClasses} borderRadius={24} fallbackBlur={glassBlur} fallbackTransparency={glassTransparency} distortionScale={distortionScale}>
           {navHeader}
           {navBody}
         </GlassSurface>
       ) : (
-        <nav
-          ref={navRef}
-          className={navCommonClasses}
-          style={{ backgroundColor: baseColor }}
-        >
+        <nav ref={navRef} className={navCommonClasses} style={{ backgroundColor: baseColor }}>
           {navHeader}
           {navBody}
         </nav>
