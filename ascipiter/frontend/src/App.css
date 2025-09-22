@@ -583,6 +583,55 @@ body, html, #root {
   border-radius: 4px;
 }
 
+/* --- STYLES for AI Response Box --- */
+.ai-response-container {
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-top: 1rem;
+  position: relative;
+  overflow: hidden; /* Important for the height animation */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.ai-response-content {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.ai-response-content p {
+  margin-bottom: 0.5rem;
+}
+
+.ai-response-error {
+  color: #ff9e9e;
+}
+
+.ai-response-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 
 @media (max-width: 768px) {
   .card-container {
@@ -642,4 +691,18 @@ body, html, #root {
   .nav-card-link {
     font-size: 15px;
   }
+}
+.text-type {
+  display: inline-block;
+  white-space: pre-wrap;
+}
+
+.text-type__cursor {
+  margin-left: 0.25rem;
+  display: inline-block;
+  opacity: 1;
+}
+
+.text-type__cursor--hidden {
+  display: none;
 }

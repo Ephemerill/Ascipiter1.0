@@ -8,8 +8,32 @@ import Silk from './components/Silk';
 import CardNav from './components/CardNav';
 import logo from './assets/logo.svg';
 import MealItem from './components/MealItem';
+import AiResponse from './components/AiResponse';
 
-// --- MODIFIED: Added 'type' and 'id' to the Show AI link ---
+// --- NEW: Helper functions for managing cookies ---
+const setCookie = (name, value, days) => {
+  let expires = "";
+  if (days) {
+    const date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    expires = "; expires=" + date.toUTCString();
+  }
+  // Add SameSite=Lax for modern browser security
+  document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
+};
+
+const getCookie = (name) => {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+};
+
+
 const navItemsTemplate = [
   {
     label: "Other Things",
@@ -29,11 +53,11 @@ const navItemsTemplate = [
     glassBlur: 25,
     glassTransparency: 0.05,
     links: [
-      { 
-        label: "Show AI", 
-        ariaLabel: "Toggle AI Helper", 
-        type: 'toggle', 
-        id: 'ai-toggle' 
+      {
+        label: "Show AI",
+        ariaLabel: "Toggle AI Helper",
+        type: 'toggle',
+        id: 'ai-toggle'
       },
       {
         label: "Show Chapel Schedule",
@@ -61,7 +85,7 @@ const navItemsTemplate = [
 // Helper function to capitalize each word in a string
 const capitalizeWords = (str) => {
   if (!str) return '';
-  return str.toLowerCase().split(' ').map(word => 
+  return str.toLowerCase().split(' ').map(word =>
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ');
 };
@@ -121,7 +145,7 @@ const parseChapelDate = (timeString) => {
 
   if (!parts) {
     console.error("Failed to parse date string with regex:", timeString);
-    return null; 
+    return null;
   }
 
   const [, monthStr, day, year, hourStr, minute, ampm] = parts;
@@ -148,14 +172,15 @@ function App() {
   const [activePage, setActivePage] = useState(getCurrentMealPeriod());
   const [menuData, setMenuData] = useState(null);
   const [chapelData, setChapelData] = useState(null);
-
   const [isMenuLoading, setIsMenuLoading] = useState(true);
   const [isChapelLoading, setIsChapelLoading] = useState(true);
   const [menuError, setMenuError] = useState(null);
   const [chapelError, setChapelError] = useState(null);
-
-  const [isChapelVisible, setIsChapelVisible] = useState(false);
-  const [isAiVisible, setIsAiVisible] = useState(false);
+  
+  const [isChapelVisible, setIsChapelVisible] = useState(() => getCookie('chapelVisible') === 'true');
+  const [isAiVisible, setIsAiVisible] = useState(() => getCookie('aiVisible') === 'true');
+  
+  const [aiResponses, setAiResponses] = useState({});
 
   const mealCardRef = useRef(null);
   const chapelCardRef = useRef(null);
@@ -163,12 +188,81 @@ function App() {
   const pageContentRef = useRef(null);
   const chapelContentRef = useRef(null);
 
+  const stationWebhookUrl = "https://n8n.biolawizard.com/webhook/3666ea52-5393-408a-a9ef-f7c78f9c5eb4";
+
   const triggerCardResize = useCallback(() => {
     if (mealCardRef.current && mealContentRef.current) {
       const targetHeight = mealContentRef.current.scrollHeight;
-      gsap.to(mealCardRef.current, { height: targetHeight, duration: 0.5, ease: 'power2.inOut' });
+      gsap.to(mealCardRef.current, {
+        height: targetHeight,
+        duration: 0.5,
+        ease: 'power2.out',
+        overwrite: 'auto'
+      });
     }
   }, []);
+
+  const closeAiResponse = (stationName) => {
+    const stationId = stationName.replace(/\s+/g, '-');
+    const responseBox = document.getElementById(`ai-response-${stationId}`);
+    if (responseBox) {
+      gsap.to(responseBox, {
+        height: 0,
+        opacity: 0,
+        marginTop: 0,
+        duration: 0.6,
+        ease: 'expo.in',
+        onComplete: () => {
+          setAiResponses(prev => {
+            const newResponses = { ...prev };
+            delete newResponses[stationName];
+            return newResponses;
+          });
+        }
+      });
+    }
+  };
+
+  const handleExplainStation = async (station) => {
+    const stationName = station.name;
+
+    if (aiResponses[stationName]) {
+      closeAiResponse(stationName);
+      return;
+    }
+
+    setAiResponses({
+      [stationName]: { isLoading: true, data: null, error: null }
+    });
+
+    const mealsPayload = station.options.map(opt => ({
+      title: opt.meal,
+      description: opt.description || ""
+    }));
+    const payload = { station_meals: mealsPayload };
+
+    try {
+      const response = await fetch(stationWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Webhook failed with status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      setAiResponses({
+        [stationName]: { isLoading: false, data: result.reply, error: null }
+      });
+    } catch (error) {
+      console.error("Webhook call failed:", error);
+      setAiResponses({
+        [stationName]: { isLoading: false, data: null, error: 'Sorry, I couldn\'t get an explanation right now.' }
+      });
+    }
+  };
 
   const triggerChapelResize = useCallback(() => {
     if (chapelCardRef.current && chapelContentRef.current && isChapelVisible) {
@@ -230,16 +324,9 @@ function App() {
 
   useLayoutEffect(() => {
     if (isAiVisible) {
-      gsap.fromTo(".explain-button", 
-        { opacity: 0, scale: 0.8 }, 
-        { 
-          opacity: 1, 
-          scale: 1, 
-          duration: 0.5, 
-          stagger: 0.05, 
-          ease: 'back.out(1.7)' 
-        }
-      );
+      gsap.fromTo(".explain-button", { opacity: 0, scale: 0.8 }, {
+        opacity: 1, scale: 1, duration: 0.5, stagger: 0.05, ease: 'back.out(1.7)'
+      });
     }
   }, [isAiVisible, activePage, menuData]);
 
@@ -271,12 +358,30 @@ function App() {
     }
   }, [isChapelLoading, isChapelVisible, chapelData, triggerChapelResize]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+        triggerCardResize();
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [aiResponses, triggerCardResize]);
+
+  useEffect(() => {
+    setCookie('chapelVisible', isChapelVisible, 365);
+  }, [isChapelVisible]);
+
+  useEffect(() => {
+    setCookie('aiVisible', isAiVisible, 365);
+  }, [isAiVisible]);
+
   const renderCardContent = () => {
     if (isMenuLoading) return <h2 style={{ textAlign: 'center' }}>Loading Menu</h2>;
     if (menuError) return <><h2>Oops!</h2><p>Could not load the menu: {menuError}</p></>;
     if (!menuData) return <h2>No Menu Data</h2>;
+
     const mealPeriodData = menuData[activePage];
     const mealPeriodName = activePage.charAt(0).toUpperCase() + activePage.slice(1);
+
     if (!mealPeriodData || mealPeriodData.length === 0) {
       return <><h2 className="meal-period-title">{mealPeriodName}</h2><p>No items are listed for this meal today.</p></>;
     }
@@ -284,28 +389,45 @@ function App() {
     return (
       <div className="menu-content">
         <h2 className="meal-period-title">{mealPeriodName}</h2>
-        {mealPeriodData.map((station, index) => (
-          <div key={index} className="station">
-            <div className="station-header">
-              <h3 className="station-name">{station.name}</h3>
-              {isAiVisible && (
-                <div className="explain-button-container">
-                  <button className="explain-button">explain this</button>
+        {mealPeriodData.map((station, index) => {
+          const stationId = station.name.replace(/\s+/g, '-');
+          return (
+            <div key={index} className="station">
+              <div className="station-header">
+                <h3 className="station-name">{station.name}</h3>
+                {isAiVisible && (
+                  <div className="explain-button-container">
+                    <button
+                      className="explain-button"
+                      onClick={() => handleExplainStation(station)}
+                    >
+                      explain this
+                    </button>
+                  </div>
+                )}
+              </div>
+              <ul className="meal-list">
+                {station.options.map((item, itemIndex) => {
+                  const displayItem = { ...item, meal: capitalizeWords(item.meal) };
+                  return <MealItem key={itemIndex} item={displayItem} onToggle={triggerCardResize} />;
+                })}
+              </ul>
+              {!!aiResponses[station.name] && (
+                <div id={`ai-response-${stationId}`}>
+                  <AiResponse
+                    responseState={aiResponses[station.name]}
+                    onClose={() => closeAiResponse(station.name)}
+                    onCharTyped={triggerCardResize}
+                  />
                 </div>
               )}
             </div>
-            <ul className="meal-list">
-              {station.options.map((item, itemIndex) => {
-                const displayItem = { ...item, meal: capitalizeWords(item.meal) };
-                return <MealItem key={itemIndex} item={displayItem} onToggle={triggerCardResize} />;
-              })}
-            </ul>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
-  
+
   const renderChapelContent = () => {
     if (isChapelLoading) return <><h2 className="meal-period-title">Chapel</h2><p>Loading Chapel...</p></>;
     if (chapelError) return <><h2 className="meal-period-title">Chapel</h2><p>Chapel events are currently unavailable. Well this is awkward.</p></>;
@@ -364,18 +486,18 @@ function App() {
         <Silk speed={5} scale={1} color="#7B7481" noiseIntensity={1.5} rotation={0} />
       </div>
       <div className="content-area">
-        <CardNav 
-            logo={logo} 
-            logoAlt="Company Logo" 
-            items={navItemsTemplate} 
-            menuColor="#fff" 
-            buttonBgColor="transparent" 
-            buttonTextColor="#fff" 
-            ease="power3.out" 
-            isGlass={true} 
-            glassBlur={15} 
-            glassTransparency={0.05} 
-            distortionScale={-80} 
+        <CardNav
+            logo={logo}
+            logoAlt="Company Logo"
+            items={navItemsTemplate}
+            menuColor="#fff"
+            buttonBgColor="transparent"
+            buttonTextColor="#fff"
+            ease="power3.out"
+            isGlass={true}
+            glassBlur={15}
+            glassTransparency={0.05}
+            distortionScale={-80}
             ctaButtonText="--°F"
             isChapelVisible={isChapelVisible}
             onToggleChapel={() => setIsChapelVisible(!isChapelVisible)}
