@@ -738,7 +738,7 @@ body, html, #root {
   display: none;
 }
 
-/* --- NEW: Settings Page Styles --- */
+/* --- Settings Page Styles --- */
 .settings-container {
   color: white;
   width: 100%;
@@ -831,7 +831,107 @@ body, html, #root {
   line-height: 1.6;
 }
 
-.settings-content .toggle-switch-container {
+.settings-content .toggle-switch-container:first-of-type {
   margin-top: 1rem;
+}
+.settings-content .toggle-switch-container {
   padding: 8px 0;
+}
+
+/* --- Advanced Color Picker --- */
+.advanced-color-picker {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+}
+
+.preset-swatches-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding-bottom: 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.color-swatch:hover { transform: scale(1.1); }
+
+.default-color-button {
+    height: 36px;
+    padding: 0 16px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 18px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.default-color-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+.arc-picker-wrapper {
+    position: relative;
+    width: 200px;
+    height: 200px;
+}
+
+.picker-area {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.1);
+    background-image: radial-gradient(rgba(255,255,255,0.2) 1px, transparent 0);
+    background-size: 10px 10px;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.arc-picker-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    padding: 2px;
+    background: conic-gradient(from 90deg at 50% 50%, hsl(0, 80%, 70%), hsl(30, 80%, 70%), hsl(60, 80%, 70%), hsl(90, 80%, 70%), hsl(120, 80%, 70%), hsl(150, 80%, 70%), hsl(180, 80%, 70%), hsl(210, 80%, 70%), hsl(240, 80%, 70%), hsl(270, 80%, 70%), hsl(300, 80%, 70%), hsl(330, 80%, 70%), hsl(360, 80%, 70%));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+}
+
+
+.picker-handle {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transform: translate(-50%, -50%);
+    cursor: grab;
+    z-index: 10;
+}
+
+.picker-handle:active {
+    cursor: grabbing;
+    transform: translate(-50%, -50%) scale(1.1);
 }

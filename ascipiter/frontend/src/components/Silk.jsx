@@ -3,15 +3,6 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { forwardRef, useRef, useMemo, useLayoutEffect } from 'react';
 import { Color } from 'three';
 
-const hexToNormalizedRGB = hex => {
-  hex = hex.replace('#', '');
-  return [
-    parseInt(hex.slice(0, 2), 16) / 255,
-    parseInt(hex.slice(2, 4), 16) / 255,
-    parseInt(hex.slice(4, 6), 16) / 255
-  ];
-};
-
 const vertexShader = `
 varying vec2 vUv;
 varying vec3 vPosition;
@@ -28,7 +19,8 @@ varying vec2 vUv;
 varying vec3 vPosition;
 
 uniform float uTime;
-uniform vec3  uColor;
+uniform vec3  uColor1;
+uniform vec3  uColor2;
 uniform float uSpeed;
 uniform float uScale;
 uniform float uRotation;
@@ -63,7 +55,15 @@ void main() {
                                    0.02 * tOffset) +
                            sin(20.0 * (tex.x + tex.y - 0.1 * tOffset)));
 
-  vec4 col = vec4(uColor, 1.0) * vec4(pattern) - rnd / 15.0 * uNoiseIntensity;
+  // --- CORRECTED LOGIC ---
+  // 1. Create a smooth base gradient from top to bottom.
+  vec3 baseGradient = mix(uColor1, uColor2, vUv.y);
+
+  // 2. Modulate the brightness of that gradient using the animated pattern.
+  vec3 finalColor = baseGradient * pattern;
+  
+  // 3. Apply noise for texture.
+  vec4 col = vec4(finalColor, 1.0) - rnd / 15.0 * uNoiseIntensity;
   col.a = 1.0;
   gl_FragColor = col;
 }
@@ -91,7 +91,7 @@ const SilkPlane = forwardRef(function SilkPlane({ uniforms }, ref) {
 });
 SilkPlane.displayName = 'SilkPlane';
 
-const Silk = ({ speed = 5, scale = 1, color = '#7B7481', noiseIntensity = 1.5, rotation = 0 }) => {
+const Silk = ({ speed = 5, scale = 1, color1 = '#7B7481', color2 = '#ADD8E6', noiseIntensity = 1.5, rotation = 0 }) => {
   const meshRef = useRef();
 
   const uniforms = useMemo(
@@ -99,12 +99,24 @@ const Silk = ({ speed = 5, scale = 1, color = '#7B7481', noiseIntensity = 1.5, r
       uSpeed: { value: speed },
       uScale: { value: scale },
       uNoiseIntensity: { value: noiseIntensity },
-      uColor: { value: new Color(...hexToNormalizedRGB(color)) },
+      uColor1: { value: new Color(color1) },
+      uColor2: { value: new Color(color2) },
       uRotation: { value: rotation },
       uTime: { value: 0 }
     }),
-    [speed, scale, noiseIntensity, color, rotation]
+    // We only want this to run once on initialization
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
   );
+
+  // This effect hook will run ONLY when the color props change
+  useLayoutEffect(() => {
+    if (meshRef.current) {
+      // Imperatively update the shader's color uniforms
+      meshRef.current.material.uniforms.uColor1.value.set(color1);
+      meshRef.current.material.uniforms.uColor2.value.set(color2);
+    }
+  }, [color1, color2]);
 
   return (
     <Canvas dpr={[1, 2]} frameloop="always">
