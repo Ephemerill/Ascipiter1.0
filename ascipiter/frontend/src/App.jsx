@@ -7,8 +7,9 @@ import CardNav from './components/CardNav';
 import logo from './assets/logo.svg';
 import MealItem from './components/MealItem';
 import AiResponse from './components/AiResponse';
+import ToggleSwitch from './components/ToggleSwitch';
 
-// --- NEW: Helper functions for managing cookies ---
+// --- Helper functions for managing cookies ---
 const setCookie = (name, value, days) => {
   let expires = "";
   if (days) {
@@ -16,7 +17,6 @@ const setCookie = (name, value, days) => {
     date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
     expires = "; expires=" + date.toUTCString();
   }
-  // Add SameSite=Lax for modern browser security
   document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
 };
 
@@ -31,7 +31,7 @@ const getCookie = (name) => {
   return null;
 };
 
-// Helper function to capitalize each word in a string
+// Helper function to capitalize each word
 const capitalizeWords = (str) => {
   if (!str) return '';
   return str.toLowerCase().split(' ').map(word =>
@@ -45,29 +45,29 @@ const getCurrentMealPeriod = () => {
   const day = now.getDay();
   const hour = now.getHours();
 
-  if (day >= 1 && day <= 5) {
+  if (day >= 1 && day <= 5) { // Weekdays
     if (hour >= 7 && hour < 11) return 'breakfast';
     if (hour >= 11 && hour < 16) return 'lunch';
     if (day === 5 && hour >= 16 && (hour < 19 || (hour === 19 && now.getMinutes() < 30))) return 'dinner';
     if (day >= 1 && day <= 4 && hour >= 16 && hour < 20) return 'dinner';
   }
 
-  if (day === 6) {
+  if (day === 6) { // Saturday
     if (hour >= 9 && hour < 10) return 'breakfast';
     if (hour >= 10 && hour < 13) return 'lunch';
     if (hour >= 17 && (hour < 19 || (hour === 19 && now.getMinutes() < 30))) return 'dinner';
   }
 
-  if (day === 0) {
+  if (day === 0) { // Sunday
     if ((hour > 11 || (hour === 11 && now.getMinutes() >= 30)) && (hour < 14 || (hour === 14 && now.getMinutes() < 30))) return 'lunch';
     if (hour >= 17 && (hour < 19 || (hour === 19 && now.getMinutes() < 30))) return 'dinner';
   }
 
-  return 'breakfast';
+  return 'breakfast'; // Default
 };
 
 
-// Helper function to calculate time until the event
+// Helper function to calculate time remaining
 const calculateTimeRemaining = (eventDate) => {
   const now = new Date();
   const diffMillis = eventDate.getTime() - now.getTime();
@@ -116,13 +116,83 @@ const parseChapelDate = (timeString) => {
   return eventDate;
 };
 
-// --- NEW: Settings Page Component ---
-const SettingsPage = React.forwardRef(({ onBack }, ref) => {
+// --- Settings Page Component ---
+const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi }, ref) => {
+  const [activeTab, setActiveTab] = useState('General');
+  const settingsPages = ['General', 'AI Settings', 'Appearance', 'About'];
+  const contentRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (contentRef.current) {
+        gsap.fromTo(contentRef.current, 
+            { opacity: 0, y: 10 }, 
+            { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' }
+        );
+    }
+  }, [activeTab]);
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'General':
+        return (
+          <div>
+            <h3>General Settings</h3>
+            <p>Configure general application settings here.</p>
+            <ToggleSwitch
+              label={isChapelVisible ? "Hide Chapel Schedule" : "Show Chapel Schedule"}
+              isToggled={isChapelVisible}
+              onToggle={onToggleChapel}
+            />
+          </div>
+        );
+      case 'AI Settings':
+        return (
+            <div>
+                <h3>AI Settings</h3>
+                <p>Control the AI features and personality.</p>
+                <ToggleSwitch
+                    label={isAiVisible ? "Hide AI Helper" : "Show AI Helper"}
+                    isToggled={isAiVisible}
+                    onToggle={onToggleAi}
+                />
+                <ToggleSwitch
+                    label="Sarcastic AI"
+                    isToggled={isSarcasticAi}
+                    onToggle={onToggleSarcasticAi}
+                />
+            </div>
+        );
+      case 'Appearance':
+        return <div><h3>Appearance</h3><p>Change the look and feel of the application.</p></div>;
+      case 'About':
+        return <div><h3>About</h3><p>Biola Wizard 2.0</p><p>This Tool Was Built With The Assistance of AI</p><p>Unknown number of loads</p></div>;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div ref={ref} className="settings-content">
-      <h2>Settings</h2>
-      <p>This is where settings for the Sarcastic AI will go.</p>
-      <button onClick={onBack}>Back to Meals</button>
+    <div ref={ref} className="settings-container">
+      <div className="settings-header">
+        <h2>Settings</h2>
+        <button onClick={onBack} className="back-button">Back to Meals</button>
+      </div>
+      <div className="settings-body">
+        <div className="settings-nav">
+          {settingsPages.map(page => (
+            <button
+              key={page}
+              className={`settings-nav-item ${activeTab === page ? 'active' : ''}`}
+              onClick={() => setActiveTab(page)}
+            >
+              {page}
+            </button>
+          ))}
+        </div>
+        <div className="settings-content" ref={contentRef}>
+          {renderContent()}
+        </div>
+      </div>
     </div>
   );
 });
@@ -139,42 +209,43 @@ function App() {
 
   const [isChapelVisible, setIsChapelVisible] = useState(() => getCookie('chapelVisible') === 'true');
   const [isAiVisible, setIsAiVisible] = useState(() => getCookie('aiVisible') === 'true');
+  const [isSarcasticAi, setIsSarcasticAi] = useState(() => getCookie('sarcasticAiVisible') === 'true');
 
   const [aiResponses, setAiResponses] = useState({});
-  const [isSettingsVisible, setIsSettingsVisible] = useState(false); // State for settings page
+  const [isSettingsVisible, setIsSettingsVisible] = useState(false);
 
   const mealCardRef = useRef(null);
   const chapelCardRef = useRef(null);
   const mealContentRef = useRef(null);
   const pageContentRef = useRef(null);
   const chapelContentRef = useRef(null);
-  const settingsContentRef = useRef(null); // Ref for settings page content
+  const settingsContentRef = useRef(null);
 
   const stationWebhookUrl = "https://n8n.biolawizard.com/webhook/3666ea52-5393-408a-a9ef-f7c78f9c5eb4";
 
   const handleSettingsToggle = useCallback(() => {
-    if (isSettingsVisible || !pageContentRef.current) return;
+    if (isSettingsVisible) return;
+    const contentToFade = pageContentRef.current;
+    if (!contentToFade) return;
 
-    gsap.to(pageContentRef.current, {
+    gsap.to(contentToFade, {
         opacity: 0,
         duration: 0.4,
         ease: 'power2.in',
-        onComplete: () => {
-            setIsSettingsVisible(true);
-        }
+        onComplete: () => setIsSettingsVisible(true)
     });
   }, [isSettingsVisible]);
 
   const handleBackToMeals = useCallback(() => {
-    if (!isSettingsVisible || !settingsContentRef.current) return;
+    if (!isSettingsVisible) return;
+    const contentToFade = settingsContentRef.current;
+    if (!contentToFade) return;
     
-    gsap.to(settingsContentRef.current, {
+    gsap.to(contentToFade, {
         opacity: 0,
         duration: 0.4,
         ease: 'power2.in',
-        onComplete: () => {
-            setIsSettingsVisible(false);
-        }
+        onComplete: () => setIsSettingsVisible(false)
     });
   }, [isSettingsVisible]);
 
@@ -197,18 +268,8 @@ function App() {
       glassBlur: 25,
       glassTransparency: 0.05,
       links: [
-        {
-          label: "Show AI",
-          ariaLabel: "Toggle AI Helper",
-          type: 'toggle',
-          id: 'ai-toggle'
-        },
-        {
-          label: "Show Chapel Schedule",
-          ariaLabel: "Toggle Chapel Schedule display",
-          type: 'toggle',
-          id: 'chapel-toggle'
-        },
+        { label: "Show AI", ariaLabel: "Toggle AI Helper", type: 'toggle', id: 'ai-toggle' },
+        { label: "Show Chapel Schedule", ariaLabel: "Toggle Chapel Schedule display", type: 'toggle', id: 'chapel-toggle' },
         { label: "Settings", ariaLabel: "Open Settings Page", type: 'button', onClick: handleSettingsToggle }
       ]
     },
@@ -243,11 +304,7 @@ function App() {
     const responseBox = document.getElementById(`ai-response-${stationId}`);
     if (responseBox) {
       gsap.to(responseBox, {
-        height: 0,
-        opacity: 0,
-        marginTop: 0,
-        duration: 0.6,
-        ease: 'expo.in',
+        height: 0, opacity: 0, marginTop: 0, duration: 0.6, ease: 'expo.in',
         onComplete: () => {
           setAiResponses(prev => {
             const newResponses = { ...prev };
@@ -261,31 +318,15 @@ function App() {
 
   const handleExplainStation = async (station) => {
     const stationName = station.name;
-
     if (aiResponses[stationName]) {
       closeAiResponse(stationName);
       return;
     }
-
     setAiResponses(prev => ({ ...prev, [stationName]: { isLoading: true, data: null, error: null } }));
-
-    const mealsPayload = station.options.map(opt => ({
-      title: opt.meal,
-      description: opt.description || ""
-    }));
-    const payload = { station_meals: mealsPayload };
-
+    const payload = { station_meals: station.options.map(opt => ({ title: opt.meal, description: opt.description || "" })) };
     try {
-      const response = await fetch(stationWebhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Webhook failed with status: ${response.status}`);
-      }
-
+      const response = await fetch(stationWebhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!response.ok) throw new Error(`Webhook failed with status: ${response.status}`);
       const result = await response.json();
       setAiResponses(prev => ({ ...prev, [stationName]: { isLoading: false, data: result.reply, error: null } }));
     } catch (error) {
@@ -309,14 +350,12 @@ function App() {
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
         setMenuData(data);
-        setMenuError(null);
       } catch (e) {
-        setMenuError(e instanceof SyntaxError ? "Failed to parse server response." : e.message);
+        setMenuError(e.message);
       } finally {
         setIsMenuLoading(false);
       }
     };
-
     const fetchChapel = async () => {
       setIsChapelLoading(true);
       try {
@@ -324,9 +363,8 @@ function App() {
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
         setChapelData(data);
-        setChapelError(null);
       } catch (e) {
-        setChapelError(e instanceof SyntaxError ? "Failed to parse server response." : e.message);
+        setChapelError(e.message);
       } finally {
         setIsChapelLoading(false);
       }
@@ -345,14 +383,12 @@ function App() {
   }, [activePage, isMenuLoading, triggerCardResize, isSettingsVisible]);
   
   useLayoutEffect(() => {
-    if (isSettingsVisible) {
-      if (settingsContentRef.current) {
+    if (isSettingsVisible && settingsContentRef.current) {
         triggerCardResize();
         gsap.fromTo(settingsContentRef.current, 
             { opacity: 0, y: 20 }, 
             { opacity: 1, y: 0, duration: 0.5, delay: 0.1, ease: 'power2.out' }
         );
-      }
     }
   }, [isSettingsVisible, triggerCardResize]);
 
@@ -365,7 +401,7 @@ function App() {
   }, [isAiVisible, activePage, menuData]);
 
   useLayoutEffect(() => {
-    const mealCard = mealCardRef.current, chapelCard = chapelCardRef.current, chapelContent = chapelContentRef.current;
+    const mealCard = mealCardRef.current, chapelCard = chapelCardRef.current;
     const onAnimationComplete = () => { triggerCardResize(); triggerChapelResize(); };
     const tl = gsap.timeline({ onComplete: onAnimationComplete });
     if (isChapelVisible) {
@@ -374,6 +410,7 @@ function App() {
         .fromTo(chapelCard, { width: '0%', opacity: 0, xPercent: -20 }, { width: '32%', opacity: 1, xPercent: 0, duration: 0.6, ease: 'power3.inOut' }, "<");
     } else {
       if (chapelCard && chapelCard.style.display !== 'none') {
+        const chapelContent = chapelContentRef.current;
         tl.to(chapelContent, { opacity: 0, duration: 0.25, ease: 'power1.in' })
           .to(mealCard, { width: '75%', duration: 0.6, ease: 'power3.inOut' })
           .to(chapelCard, { width: '0%', opacity: 0, xPercent: -20, duration: 0.6, ease: 'power3.inOut' }, "<")
@@ -393,33 +430,23 @@ function App() {
   }, [isChapelLoading, isChapelVisible, chapelData, triggerChapelResize]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-        triggerCardResize();
-    }, 150);
-
+    const timer = setTimeout(triggerCardResize, 150);
     return () => clearTimeout(timer);
   }, [aiResponses, triggerCardResize]);
 
-  useEffect(() => {
-    setCookie('chapelVisible', isChapelVisible, 365);
-  }, [isChapelVisible]);
-
-  useEffect(() => {
-    setCookie('aiVisible', isAiVisible, 365);
-  }, [isAiVisible]);
+  useEffect(() => { setCookie('chapelVisible', isChapelVisible, 365); }, [isChapelVisible]);
+  useEffect(() => { setCookie('aiVisible', isAiVisible, 365); }, [isAiVisible]);
+  useEffect(() => { setCookie('sarcasticAiVisible', isSarcasticAi, 365); }, [isSarcasticAi]);
 
   const renderCardContent = () => {
     if (isMenuLoading) return <h2 style={{ textAlign: 'center' }}>Loading Menu</h2>;
-    if (menuError) return <><h2>Oops!</h2><p>Could not load the menu: {menuError}</p></>;
+    if (menuError) return <><h2>Oops!</h2><p>Could not load menu: {menuError}</p></>;
     if (!menuData) return <h2>No Menu Data</h2>;
-
     const mealPeriodData = menuData[activePage];
-    const mealPeriodName = activePage.charAt(0).toUpperCase() + activePage.slice(1);
-
+    const mealPeriodName = capitalizeWords(activePage);
     if (!mealPeriodData || mealPeriodData.length === 0) {
-      return <><h2 className="meal-period-title">{mealPeriodName}</h2><p>No items are listed for this meal today.</p></>;
+      return <><h2 className="meal-period-title">{mealPeriodName}</h2><p>No items listed for this meal.</p></>;
     }
-
     return (
       <div className="menu-content">
         <h2 className="meal-period-title">{mealPeriodName}</h2>
@@ -429,32 +456,12 @@ function App() {
             <div key={index} className="station">
               <div className="station-header">
                 <h3 className="station-name">{station.name}</h3>
-                {isAiVisible && (
-                  <div className="explain-button-container">
-                    <button
-                      className="explain-button"
-                      onClick={() => handleExplainStation(station)}
-                    >
-                      explain this
-                    </button>
-                  </div>
-                )}
+                {isAiVisible && <button className="explain-button" onClick={() => handleExplainStation(station)}>explain this</button>}
               </div>
               <ul className="meal-list">
-                {station.options.map((item, itemIndex) => {
-                  const displayItem = { ...item, meal: capitalizeWords(item.meal) };
-                  return <MealItem key={itemIndex} item={displayItem} onToggle={triggerCardResize} />;
-                })}
+                {station.options.map((item, itemIndex) => <MealItem key={itemIndex} item={{...item, meal: capitalizeWords(item.meal)}} onToggle={triggerCardResize} />)}
               </ul>
-              {!!aiResponses[station.name] && (
-                <div id={`ai-response-${stationId}`}>
-                  <AiResponse
-                    responseState={aiResponses[station.name]}
-                    onClose={() => closeAiResponse(station.name)}
-                    onCharTyped={triggerCardResize}
-                  />
-                </div>
-              )}
+              {!!aiResponses[station.name] && <div id={`ai-response-${stationId}`}><AiResponse responseState={aiResponses[station.name]} onClose={() => closeAiResponse(station.name)} onCharTyped={triggerCardResize} /></div>}
             </div>
           );
         })}
@@ -464,48 +471,34 @@ function App() {
 
   const renderChapelContent = () => {
     if (isChapelLoading) return <><h2 className="meal-period-title">Chapel</h2><p>Loading Chapel...</p></>;
-    if (chapelError) return <><h2 className="meal-period-title">Chapel</h2><p>Chapel events are currently unavailable. Well this is awkward.</p></>;
-    if (!chapelData || chapelData.length === 0) return <><h2 className="meal-period-title">Chapel</h2><p style={{ textAlign: 'center' }}>No chapel events listed for today. Well this is awkward.</p></>;
-
-    const now = new Date();
+    if (chapelError) return <><h2 className="meal-period-title">Chapel</h2><p>Chapel events unavailable.</p></>;
+    if (!chapelData || chapelData.length === 0) return <><h2 className="meal-period-title">Chapel</h2><p>No chapel events listed.</p></>;
     const upcomingEvents = chapelData
       .map(event => ({ ...event, dateObject: parseChapelDate(event.time) }))
-      .filter(event => event.dateObject && event.dateObject > now)
+      .filter(event => event.dateObject && event.dateObject > new Date())
       .sort((a, b) => a.dateObject - b.dateObject)
       .slice(0, 5);
-
     return (
       <>
         <h2 className="meal-period-title">Upcoming Chapel</h2>
         <div className="chapel-events-list">
           {upcomingEvents.length > 0 ? (
             upcomingEvents.map((event, index) => {
-              const timeParts = event.time.split(/ at /i);
-              const datePart = timeParts[0].replace(/,,/g, ',').replace(/,$/, '');
-              const timePart = timeParts.length > 1 ? timeParts[1] : '';
-              const timeRemaining = calculateTimeRemaining(event.dateObject);
-
+              const [datePart, timePart] = event.time.split(/ at /i);
               return (
                 <div key={index} className="chapel-event-card">
                   <div className="chapel-event-content">
                     <div className="chapel-header">
                       <h3 className="chapel-title">{event.title}</h3>
-                      <span className="chapel-countdown">{timeRemaining}</span>
+                      <span className="chapel-countdown">{calculateTimeRemaining(event.dateObject)}</span>
                     </div>
-                    <div className="chapel-datetime">
-                      <p className="chapel-date">{datePart}</p>
-                      <p className="chapel-time">{timePart}</p>
-                    </div>
-                    {event.description !== 'No description' && (
-                      <p className="chapel-description">{event.description}</p>
-                    )}
+                    <div className="chapel-datetime"><p className="chapel-date">{datePart.replace(/,,/g, ',').replace(/,$/, '')}</p><p className="chapel-time">{timePart || ''}</p></div>
+                    {event.description !== 'No description' && <p className="chapel-description">{event.description}</p>}
                   </div>
                 </div>
               );
             })
-          ) : (
-            <p>No upcoming chapel events found. Well this is awkward.</p>
-          )}
+          ) : <p>No upcoming chapel events found.</p>}
         </div>
       </>
     );
@@ -513,37 +506,25 @@ function App() {
 
   return (
     <div className="App">
-      <div className="silk-container">
-        <Silk speed={5} scale={1} color="#7B7481" noiseIntensity={1.5} rotation={0} />
-      </div>
+      <div className="silk-container"><Silk speed={5} scale={1} color="#7B7481" noiseIntensity={1.5} rotation={0} /></div>
       <div className="content-area">
-        <CardNav
-            logo={logo}
-            logoAlt="Company Logo"
-            items={navItemsTemplate}
-            menuColor="#fff"
-            buttonBgColor="transparent"
-            buttonTextColor="#fff"
-            ease="power3.out"
-            isGlass={true}
-            glassBlur={15}
-            glassTransparency={0.05}
-            distortionScale={-80}
-            ctaButtonText="--°F"
-            isChapelVisible={isChapelVisible}
-            onToggleChapel={() => setIsChapelVisible(!isChapelVisible)}
-            isAiVisible={isAiVisible}
-            onToggleAi={() => setIsAiVisible(!isAiVisible)}
-        />
+        <CardNav logo={logo} logoAlt="Company Logo" items={navItemsTemplate} menuColor="#fff" buttonBgColor="transparent" buttonTextColor="#fff" ease="power3.out" isGlass={true} glassBlur={15} glassTransparency={0.05} distortionScale={-80} ctaButtonText="--°F" isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(!isChapelVisible)} isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)} />
         <div className="card-container">
           <GlassSurface ref={mealCardRef} borderRadius={20} className="meal-card" distortionScale={-80}>
             <div className="card-content" ref={mealContentRef}>
               {isSettingsVisible ? (
-                  <SettingsPage ref={settingsContentRef} onBack={handleBackToMeals} />
+                  <SettingsPage
+                    ref={settingsContentRef}
+                    onBack={handleBackToMeals}
+                    isChapelVisible={isChapelVisible}
+                    onToggleChapel={() => setIsChapelVisible(!isChapelVisible)}
+                    isAiVisible={isAiVisible}
+                    onToggleAi={() => setIsAiVisible(!isAiVisible)}
+                    isSarcasticAi={isSarcasticAi}
+                    onToggleSarcasticAi={() => setIsSarcasticAi(!isSarcasticAi)}
+                  />
               ) : (
-                <div ref={pageContentRef}>
-                  {renderCardContent()}
-                </div>
+                <div ref={pageContentRef}>{renderCardContent()}</div>
               )}
               {!isSettingsVisible && (
                 <div className="inner-nav-bar">
@@ -554,9 +535,7 @@ function App() {
               )}
             </div>
           </GlassSurface>
-          <GlassSurface ref={chapelCardRef} borderRadius={20} className="chapel-card">
-            <div className="card-content chapel-card-wrapper" ref={chapelContentRef}>{renderChapelContent()}</div>
-          </GlassSurface>
+          <GlassSurface ref={chapelCardRef} borderRadius={20} className="chapel-card"><div className="card-content chapel-card-wrapper" ref={chapelContentRef}>{renderChapelContent()}</div></GlassSurface>
         </div>
       </div>
     </div>

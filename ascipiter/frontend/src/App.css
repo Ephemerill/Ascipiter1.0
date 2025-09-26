@@ -739,37 +739,99 @@ body, html, #root {
 }
 
 /* --- NEW: Settings Page Styles --- */
-.settings-content {
+.settings-container {
   color: white;
+  width: 100%;
 }
 
-.settings-content h2 {
-  text-align: center;
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 1rem;
   margin-bottom: 1.5rem;
+}
+
+.settings-header h2 {
+  margin: 0;
   font-size: 2rem;
 }
 
-.settings-content p {
-  text-align: center;
+.back-button {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.back-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.settings-body {
+  display: flex;
+  gap: 2rem;
+}
+
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 0 0 160px; /* Do not grow, do not shrink, base width 160px */
+}
+
+.settings-nav-item {
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: 1px solid transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: inherit;
   font-size: 1rem;
-  opacity: 0.9;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.settings-nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.settings-nav-item.active {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-weight: 600;
+}
+
+.settings-content {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0 0.5rem 1.5rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.settings-content h3 {
+  margin-top: 0;
+  font-size: 1.5rem;
+}
+
+.settings-content p {
+  font-size: 1rem;
+  opacity: 0.8;
   line-height: 1.6;
 }
 
-.settings-content button {
-  display: block;
-  margin: 2rem auto 0 auto;
-  padding: 12px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.settings-content button:hover {
-  background: rgba(255, 255, 255, 0.2);
+.settings-content .toggle-switch-container {
+  margin-top: 1rem;
+  padding: 8px 0;
 }
