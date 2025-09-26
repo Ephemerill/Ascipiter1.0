@@ -935,3 +935,57 @@ body, html, #root {
     cursor: grabbing;
     transform: translate(-50%, -50%) scale(1.1);
 }
+
+.saturation-slider-container {
+    width: 100%;
+    padding-top: 24px;
+    margin-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+.saturation-slider-container label {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.saturation-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 80%;
+    max-width: 250px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+}
+
+.saturation-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    border: 2px solid rgba(0,0,0,0.2);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.1s ease;
+}
+.saturation-slider::-webkit-slider-thumb:active {
+    transform: scale(1.2);
+}
+
+.saturation-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    border: 2px solid rgba(0,0,0,0.2);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}

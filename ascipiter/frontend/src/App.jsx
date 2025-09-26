@@ -118,7 +118,7 @@ const parseChapelDate = (timeString) => {
 
 
 // --- Arc Style Color Picker ---
-const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2 }) => {
+const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation, setSaturation }) => {
     const pickerRef = useRef(null);
     const [dragging, setDragging] = useState(null);
 
@@ -137,7 +137,7 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2 }) => {
         return (angle + 360) % 360;
     };
 
-    const angleToHsl = (angle) => `hsl(${angle}, 80%, 70%)`;
+    const angleToHsl = (angle) => `hsl(${angle}, ${saturation}%, 70%)`;
 
     const handleInteraction = (e, handleId) => {
         const picker = pickerRef.current;
@@ -226,9 +226,14 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2 }) => {
     const handlePresetSelect = (preset) => {
         setAngle1(hexToHslAngle(preset.c1));
         setAngle2(hexToHslAngle(preset.c2));
+        setSaturation(80);
     };
 
-    const handleDefault = () => handlePresetSelect({ c1: '#7B7481', c2: '#ADD8E6' });
+    const handleDefault = () => {
+        setAngle1(258); // Dark Purple
+        setAngle2(238); // Light Purple
+        setSaturation(5);
+    };
 
     return (
         <div className="advanced-color-picker">
@@ -244,12 +249,24 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2 }) => {
                     <div className="picker-handle" style={{ left: `${handle2Pos.x}%`, top: `${handle2Pos.y}%`, backgroundColor: angleToHsl(angle2) }} onMouseDown={(e) => handleStart(e, 'handle2')} onTouchStart={(e) => handleStart(e, 'handle2')} />
                 </div>
             </div>
+            <div className="saturation-slider-container">
+                <label htmlFor="saturation">Saturation</label>
+                <input
+                    type="range"
+                    id="saturation"
+                    className="saturation-slider"
+                    min="0"
+                    max="100"
+                    value={saturation}
+                    onChange={(e) => setSaturation(Number(e.target.value))}
+                />
+            </div>
         </div>
     );
 };
 
 // --- Settings Page Component ---
-const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi, silkAngle1, setSilkAngle1, silkAngle2, setSilkAngle2, triggerCardResize }, ref) => {
+const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi, silkAngle1, setSilkAngle1, silkAngle2, setSilkAngle2, silkSaturation, setSilkSaturation, triggerCardResize }, ref) => {
   const [activeTab, setActiveTab] = useState('General');
   const settingsPages = ['General', 'AI Settings', 'Appearance', 'About'];
   const contentRef = useRef(null);
@@ -287,7 +304,7 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
             <div>
                 <h3>Appearance</h3>
                 <p>Change the background by dragging the bubbles.</p>
-                <AdvancedColorPicker angle1={silkAngle1} setAngle1={setSilkAngle1} angle2={silkAngle2} setAngle2={setSilkAngle2} />
+                <AdvancedColorPicker angle1={silkAngle1} setAngle1={setSilkAngle1} angle2={silkAngle2} setAngle2={setSilkAngle2} saturation={silkSaturation} setSaturation={setSilkSaturation} />
             </div>
         );
       case 'About':
@@ -326,8 +343,10 @@ function App() {
   const [isAiVisible, setIsAiVisible] = useState(() => getCookie('aiVisible') === 'true');
   const [isSarcasticAi, setIsSarcasticAi] = useState(() => getCookie('sarcasticAiVisible') === 'true');
 
-  const [silkAngle1, setSilkAngle1] = useState(() => parseFloat(getCookie('silkAngle1')) || 270);
-  const [silkAngle2, setSilkAngle2] = useState(() => parseFloat(getCookie('silkAngle2')) || 200);
+  const [silkAngle1, setSilkAngle1] = useState(() => parseFloat(getCookie('silkAngle1')) || 258);
+  const [silkAngle2, setSilkAngle2] = useState(() => parseFloat(getCookie('silkAngle2')) || 238);
+  const [silkSaturation, setSilkSaturation] = useState(() => parseFloat(getCookie('silkSaturation')) || 5);
+
 
   const [aiResponses, setAiResponses] = useState({});
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
@@ -419,9 +438,11 @@ function App() {
   useEffect(() => { setCookie('sarcasticAiVisible', isSarcasticAi, 365); }, [isSarcasticAi]);
   useEffect(() => { setCookie('silkAngle1', silkAngle1, 365); }, [silkAngle1]);
   useEffect(() => { setCookie('silkAngle2', silkAngle2, 365); }, [silkAngle2]);
+  useEffect(() => { setCookie('silkSaturation', silkSaturation, 365); }, [silkSaturation]);
 
-  const silkColor1 = useMemo(() => `hsl(${silkAngle1}, 80%, 70%)`, [silkAngle1]);
-  const silkColor2 = useMemo(() => `hsl(${silkAngle2}, 80%, 70%)`, [silkAngle2]);
+
+  const silkColor1 = useMemo(() => `hsl(${silkAngle1}, ${silkSaturation}%, 70%)`, [silkAngle1, silkSaturation]);
+  const silkColor2 = useMemo(() => `hsl(${silkAngle2}, ${silkSaturation}%, 70%)`, [silkAngle2, silkSaturation]);
 
   const renderCardContent = () => {
     if (isMenuLoading) return <h2 style={{ textAlign: 'center' }}>Loading Menu</h2>;
@@ -484,7 +505,7 @@ function App() {
           <GlassSurface ref={mealCardRef} borderRadius={20} className="meal-card" distortionScale={-80}>
             <div className="card-content" ref={mealContentRef}>
               {isSettingsVisible ? (
-                  <SettingsPage ref={settingsContentRef} onBack={handleBackToMeals} isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(!isChapelVisible)} isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)} isSarcasticAi={isSarcasticAi} onToggleSarcasticAi={() => setIsSarcasticAi(!isSarcasticAi)} silkAngle1={silkAngle1} setSilkAngle1={setSilkAngle1} silkAngle2={silkAngle2} setSilkAngle2={setSilkAngle2} triggerCardResize={triggerCardResize} />
+                  <SettingsPage ref={settingsContentRef} onBack={handleBackToMeals} isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(!isChapelVisible)} isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)} isSarcasticAi={isSarcasticAi} onToggleSarcasticAi={() => setIsSarcasticAi(!isSarcasticAi)} silkAngle1={silkAngle1} setSilkAngle1={setSilkAngle1} silkAngle2={silkAngle2} setSilkAngle2={setSilkAngle2} silkSaturation={silkSaturation} setSilkSaturation={setSilkSaturation} triggerCardResize={triggerCardResize} />
               ) : ( <div ref={pageContentRef}>{renderCardContent()}</div> )}
               {!isSettingsVisible && (
                 <div className="inner-nav-bar">
