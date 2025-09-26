@@ -1,6 +1,4 @@
-// frontend/src/App.jsx
-
-import React, { useState, useRef, useLayoutEffect, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useLayoutEffect, useEffect, useCallback, useMemo } from 'react';
 import { gsap } from 'gsap';
 import GlassSurface from './components/GlassSurface';
 import './App.css';
@@ -32,55 +30,6 @@ const getCookie = (name) => {
   }
   return null;
 };
-
-
-const navItemsTemplate = [
-  {
-    label: "Other Things",
-    textColor: "#fff",
-    isGlass: true,
-    glassBlur: 25,
-    glassTransparency: 0.05,
-    links: [
-      { label: "Donate to me :)", ariaLabel: "donate", href: "https://buymeacoffee.com/ephemeril", target: "_blank"},
-      { label: "Something else", ariaLabel: "About Careers" }
-    ]
-  },
-  {
-    label: "Settings",
-    textColor: "#fff",
-    isGlass: true,
-    glassBlur: 25,
-    glassTransparency: 0.05,
-    links: [
-      {
-        label: "Show AI",
-        ariaLabel: "Toggle AI Helper",
-        type: 'toggle',
-        id: 'ai-toggle'
-      },
-      {
-        label: "Show Chapel Schedule",
-        ariaLabel: "Toggle Chapel Schedule display",
-        type: 'toggle',
-        id: 'chapel-toggle'
-      },
-      { label: "Sarcastic AI", ariaLabel: "Sarcasm" }
-    ]
-  },
-  {
-    label: "Legacy Sites",
-    textColor: "#ffffffff",
-    isGlass: true,
-    glassBlur: 25,
-    glassTransparency: 0.05,
-    links: [
-      { label: "Legacy", ariaLabel: "Legacy Site", href: "https://biolawizard.com/", target: "_blank" },
-      { label: "Extra Old", ariaLabel: "Extra Old Site", href: "https://google.com", target: "_blank" },
-      { label: "Caf Website", ariaLabel: "Caf Website", href: "https://cafebiola.cafebonappetit.com/cafe/cafe-biola/", target: "_blank" }
-    ]
-  }
-];
 
 // Helper function to capitalize each word in a string
 const capitalizeWords = (str) => {
@@ -167,6 +116,17 @@ const parseChapelDate = (timeString) => {
   return eventDate;
 };
 
+// --- NEW: Settings Page Component ---
+const SettingsPage = React.forwardRef(({ onBack }, ref) => {
+  return (
+    <div ref={ref} className="settings-content">
+      <h2>Settings</h2>
+      <p>This is where settings for the Sarcastic AI will go.</p>
+      <button onClick={onBack}>Back to Meals</button>
+    </div>
+  );
+});
+
 
 function App() {
   const [activePage, setActivePage] = useState(getCurrentMealPeriod());
@@ -176,19 +136,95 @@ function App() {
   const [isChapelLoading, setIsChapelLoading] = useState(true);
   const [menuError, setMenuError] = useState(null);
   const [chapelError, setChapelError] = useState(null);
-  
+
   const [isChapelVisible, setIsChapelVisible] = useState(() => getCookie('chapelVisible') === 'true');
   const [isAiVisible, setIsAiVisible] = useState(() => getCookie('aiVisible') === 'true');
-  
+
   const [aiResponses, setAiResponses] = useState({});
+  const [isSettingsVisible, setIsSettingsVisible] = useState(false); // State for settings page
 
   const mealCardRef = useRef(null);
   const chapelCardRef = useRef(null);
   const mealContentRef = useRef(null);
   const pageContentRef = useRef(null);
   const chapelContentRef = useRef(null);
+  const settingsContentRef = useRef(null); // Ref for settings page content
 
   const stationWebhookUrl = "https://n8n.biolawizard.com/webhook/3666ea52-5393-408a-a9ef-f7c78f9c5eb4";
+
+  const handleSettingsToggle = useCallback(() => {
+    if (isSettingsVisible || !pageContentRef.current) return;
+
+    gsap.to(pageContentRef.current, {
+        opacity: 0,
+        duration: 0.4,
+        ease: 'power2.in',
+        onComplete: () => {
+            setIsSettingsVisible(true);
+        }
+    });
+  }, [isSettingsVisible]);
+
+  const handleBackToMeals = useCallback(() => {
+    if (!isSettingsVisible || !settingsContentRef.current) return;
+    
+    gsap.to(settingsContentRef.current, {
+        opacity: 0,
+        duration: 0.4,
+        ease: 'power2.in',
+        onComplete: () => {
+            setIsSettingsVisible(false);
+        }
+    });
+  }, [isSettingsVisible]);
+
+  const navItemsTemplate = useMemo(() => [
+    {
+      label: "Other Things",
+      textColor: "#fff",
+      isGlass: true,
+      glassBlur: 25,
+      glassTransparency: 0.05,
+      links: [
+        { label: "Donate to me :)", ariaLabel: "donate", href: "https://buymeacoffee.com/ephemeril", target: "_blank"},
+        { label: "Something else", ariaLabel: "About Careers" }
+      ]
+    },
+    {
+      label: "Settings",
+      textColor: "#fff",
+      isGlass: true,
+      glassBlur: 25,
+      glassTransparency: 0.05,
+      links: [
+        {
+          label: "Show AI",
+          ariaLabel: "Toggle AI Helper",
+          type: 'toggle',
+          id: 'ai-toggle'
+        },
+        {
+          label: "Show Chapel Schedule",
+          ariaLabel: "Toggle Chapel Schedule display",
+          type: 'toggle',
+          id: 'chapel-toggle'
+        },
+        { label: "Settings", ariaLabel: "Open Settings Page", type: 'button', onClick: handleSettingsToggle }
+      ]
+    },
+    {
+      label: "Legacy Sites",
+      textColor: "#ffffffff",
+      isGlass: true,
+      glassBlur: 25,
+      glassTransparency: 0.05,
+      links: [
+        { label: "Legacy", ariaLabel: "Legacy Site", href: "https://biolawizard.com/", target: "_blank" },
+        { label: "Extra Old", ariaLabel: "Extra Old Site", href: "https://google.com", target: "_blank" },
+        { label: "Caf Website", ariaLabel: "Caf Website", href: "https://cafebiola.cafebonappetit.com/cafe/cafe-biola/", target: "_blank" }
+      ]
+    }
+  ], [handleSettingsToggle]);
 
   const triggerCardResize = useCallback(() => {
     if (mealCardRef.current && mealContentRef.current) {
@@ -231,9 +267,7 @@ function App() {
       return;
     }
 
-    setAiResponses({
-      [stationName]: { isLoading: true, data: null, error: null }
-    });
+    setAiResponses(prev => ({ ...prev, [stationName]: { isLoading: true, data: null, error: null } }));
 
     const mealsPayload = station.options.map(opt => ({
       title: opt.meal,
@@ -253,14 +287,10 @@ function App() {
       }
 
       const result = await response.json();
-      setAiResponses({
-        [stationName]: { isLoading: false, data: result.reply, error: null }
-      });
+      setAiResponses(prev => ({ ...prev, [stationName]: { isLoading: false, data: result.reply, error: null } }));
     } catch (error) {
       console.error("Webhook call failed:", error);
-      setAiResponses({
-        [stationName]: { isLoading: false, data: null, error: 'Sorry, I couldn\'t get an explanation right now.' }
-      });
+      setAiResponses(prev => ({ ...prev, [stationName]: { isLoading: false, data: null, error: 'Sorry, I couldn\'t get an explanation right now.' } }));
     }
   };
 
@@ -281,11 +311,7 @@ function App() {
         setMenuData(data);
         setMenuError(null);
       } catch (e) {
-        if (e instanceof SyntaxError) {
-          setMenuError("Failed to parse server response. Expected JSON.");
-        } else {
-          setMenuError(e.message);
-        }
+        setMenuError(e instanceof SyntaxError ? "Failed to parse server response." : e.message);
       } finally {
         setIsMenuLoading(false);
       }
@@ -300,11 +326,7 @@ function App() {
         setChapelData(data);
         setChapelError(null);
       } catch (e) {
-        if (e instanceof SyntaxError) {
-          setChapelError("Failed to parse server response. Expected JSON.");
-        } else {
-          setChapelError(e.message);
-        }
+        setChapelError(e instanceof SyntaxError ? "Failed to parse server response." : e.message);
       } finally {
         setIsChapelLoading(false);
       }
@@ -314,13 +336,25 @@ function App() {
   }, []);
 
   useLayoutEffect(() => {
-    if (!isMenuLoading && mealContentRef.current && pageContentRef.current) {
+    if (!isMenuLoading && mealContentRef.current && pageContentRef.current && !isSettingsVisible) {
       const content = pageContentRef.current;
       gsap.set(content, { opacity: 0 });
       triggerCardResize();
       gsap.to(content, { opacity: 1, duration: 0.4, delay: 0.3 });
     }
-  }, [activePage, isMenuLoading, triggerCardResize]);
+  }, [activePage, isMenuLoading, triggerCardResize, isSettingsVisible]);
+  
+  useLayoutEffect(() => {
+    if (isSettingsVisible) {
+      if (settingsContentRef.current) {
+        triggerCardResize();
+        gsap.fromTo(settingsContentRef.current, 
+            { opacity: 0, y: 20 }, 
+            { opacity: 1, y: 0, duration: 0.5, delay: 0.1, ease: 'power2.out' }
+        );
+      }
+    }
+  }, [isSettingsVisible, triggerCardResize]);
 
   useLayoutEffect(() => {
     if (isAiVisible) {
@@ -435,10 +469,7 @@ function App() {
 
     const now = new Date();
     const upcomingEvents = chapelData
-      .map(event => {
-        const eventDate = parseChapelDate(event.time);
-        return { ...event, dateObject: eventDate };
-      })
+      .map(event => ({ ...event, dateObject: parseChapelDate(event.time) }))
       .filter(event => event.dateObject && event.dateObject > now)
       .sort((a, b) => a.dateObject - b.dateObject)
       .slice(0, 5);
@@ -507,14 +538,20 @@ function App() {
         <div className="card-container">
           <GlassSurface ref={mealCardRef} borderRadius={20} className="meal-card" distortionScale={-80}>
             <div className="card-content" ref={mealContentRef}>
-              <div ref={pageContentRef}>
-                {renderCardContent()}
-              </div>
-              <div className="inner-nav-bar">
-                <button className={`inner-nav-button ${activePage === 'breakfast' ? 'active' : ''}`} onClick={() => setActivePage('breakfast')}>Breakfast</button>
-                <button className={`inner-nav-button ${activePage === 'lunch' ? 'active' : ''}`} onClick={() => setActivePage('lunch')}>Lunch</button>
-                <button className={`inner-nav-button ${activePage === 'dinner' ? 'active' : ''}`} onClick={() => setActivePage('dinner')}>Dinner</button>
-              </div>
+              {isSettingsVisible ? (
+                  <SettingsPage ref={settingsContentRef} onBack={handleBackToMeals} />
+              ) : (
+                <div ref={pageContentRef}>
+                  {renderCardContent()}
+                </div>
+              )}
+              {!isSettingsVisible && (
+                <div className="inner-nav-bar">
+                  <button className={`inner-nav-button ${activePage === 'breakfast' ? 'active' : ''}`} onClick={() => setActivePage('breakfast')}>Breakfast</button>
+                  <button className={`inner-nav-button ${activePage === 'lunch' ? 'active' : ''}`} onClick={() => setActivePage('lunch')}>Lunch</button>
+                  <button className={`inner-nav-button ${activePage === 'dinner' ? 'active' : ''}`} onClick={() => setActivePage('dinner')}>Dinner</button>
+                </div>
+              )}
             </div>
           </GlassSurface>
           <GlassSurface ref={chapelCardRef} borderRadius={20} className="chapel-card">

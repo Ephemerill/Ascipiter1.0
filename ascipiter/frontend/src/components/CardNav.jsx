@@ -160,6 +160,7 @@ const CardNav = ({
             <div className="nav-card-label">{item.label}</div>
             <div className="nav-card-links">
               {item.links?.map((lnk, i) => {
+                // Handle toggle switches
                 if (lnk.type === 'toggle') {
                   const isToggled = lnk.id === 'ai-toggle' ? isAiVisible : isChapelVisible;
                   const onToggle = lnk.id === 'ai-toggle' ? onToggleAi : onToggleChapel;
@@ -181,6 +182,21 @@ const CardNav = ({
                   );
                 }
                 
+                // --- NEW: Handle buttons ---
+                if (lnk.type === 'button') {
+                  return (
+                    <button
+                      key={`${lnk.label}-${i}`}
+                      className="nav-card-button"
+                      onClick={lnk.onClick}
+                      aria-label={lnk.ariaLabel}
+                    >
+                      {lnk.label}
+                    </button>
+                  );
+                }
+                
+                // Default to a standard link
                 return (
                   <a key={`${lnk.label}-${i}`} className="nav-card-link" href={lnk.href} target={lnk.target} rel={lnk.target === '_blank' ? 'noopener noreferrer' : undefined} aria-label={lnk.ariaLabel}>
                     <GoArrowUpRight className="nav-card-link-icon" aria-hidden="true" />
