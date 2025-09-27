@@ -8,6 +8,7 @@ import logo from './assets/logo.svg';
 import MealItem from './components/MealItem';
 import AiResponse from './components/AiResponse';
 import ToggleSwitch from './components/ToggleSwitch';
+import ElasticSlider from './components/ElasticSlider';
 
 // --- Helper functions for managing cookies ---
 const setCookie = (name, value, days) => {
@@ -193,7 +194,7 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation,
     const handle2Pos = angleToPos(angle2);
 
     const gradientPresets = useMemo(() => [
-        { name: 'Twilight', c1: '#7B7481', c2: '#ADD8E6' },
+        { name: 'Twilight', c1: '#756880ff', c2: '#ADD8E6' },
         { name: 'Sunrise', c1: '#ff7e5f', c2: '#feb47b' },
         { name: 'Ocean', c1: '#00c6ff', c2: '#0072ff' },
         { name: 'Mango', c1: '#22c1c3', c2: '#fdbb2d' },
@@ -235,6 +236,31 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation,
         setSaturation(5);
     };
 
+    const LowSatIcon = () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" fill="url(#paint0_linear_1_2)"/>
+            <defs>
+                <linearGradient id="paint0_linear_1_2" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#E0E0E0"/>
+                    <stop offset="1" stopColor="#BDBDBD"/>
+                </linearGradient>
+            </defs>
+        </svg>
+    );
+
+    const HighSatIcon = () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" fill="url(#paint0_radial_1_3)"/>
+            <defs>
+                <radialGradient id="paint0_radial_1_3" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(12 12) rotate(90) scale(10)">
+                    <stop stopColor="#FF8A8A"/>
+                    <stop offset="0.5" stopColor="#82B1FF"/>
+                    <stop offset="1" stopColor="#B9F6CA"/>
+                </radialGradient>
+            </defs>
+        </svg>
+    );
+
     return (
         <div className="advanced-color-picker">
              <div className="preset-swatches-container">
@@ -250,15 +276,13 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation,
                 </div>
             </div>
             <div className="saturation-slider-container">
-                <label htmlFor="saturation">Saturation</label>
-                <input
-                    type="range"
-                    id="saturation"
-                    className="saturation-slider"
-                    min="0"
-                    max="100"
+                <label>Saturation</label>
+                <ElasticSlider
                     value={saturation}
-                    onChange={(e) => setSaturation(Number(e.target.value))}
+                    onChange={setSaturation}
+                    maxValue={100}
+                    leftIcon={<LowSatIcon />}
+                    rightIcon={<HighSatIcon />}
                 />
             </div>
         </div>
@@ -301,7 +325,7 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
         );
       case 'Appearance':
         return (
-            <div>
+            <div className="appearance-settings">
                 <h3>Appearance</h3>
                 <p>Change the background by dragging the bubbles.</p>
                 <AdvancedColorPicker angle1={silkAngle1} setAngle1={setSilkAngle1} angle2={silkAngle2} setAngle2={setSilkAngle2} saturation={silkSaturation} setSaturation={setSilkSaturation} />
@@ -360,25 +384,33 @@ function App() {
 
   const stationWebhookUrl = "https://n8n.biolawizard.com/webhook/3666ea52-5393-408a-a9ef-f7c78f9c5eb4";
 
-  const handleSettingsToggle = useCallback(() => {
-    if (isSettingsVisible) return;
-    const contentToFade = pageContentRef.current;
-    if (!contentToFade) return;
-    gsap.to(contentToFade, { opacity: 0, duration: 0.4, ease: 'power2.in', onComplete: () => setIsSettingsVisible(true) });
-  }, [isSettingsVisible]);
-
-  const handleBackToMeals = useCallback(() => {
-    if (!isSettingsVisible) return;
-    const contentToFade = settingsContentRef.current;
-    if (!contentToFade) return;
-    gsap.to(contentToFade, { opacity: 0, duration: 0.4, ease: 'power2.in', onComplete: () => setIsSettingsVisible(false) });
+  const toggleSettingsPage = useCallback(() => {
+    if (isSettingsVisible) {
+        const contentToFade = settingsContentRef.current;
+        if (!contentToFade) return;
+        gsap.to(contentToFade, {
+            opacity: 0,
+            duration: 0.4,
+            ease: 'power2.in',
+            onComplete: () => setIsSettingsVisible(false)
+        });
+    } else {
+        const contentToFade = pageContentRef.current;
+        if (!contentToFade) return;
+        gsap.to(contentToFade, {
+            opacity: 0,
+            duration: 0.4,
+            ease: 'power2.in',
+            onComplete: () => setIsSettingsVisible(true)
+        });
+    }
   }, [isSettingsVisible]);
 
   const navItemsTemplate = useMemo(() => [
-    { label: "Other Things", textColor: "#fff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [ { label: "Donate to me :)", ariaLabel: "donate", href: "https://buymeacoffee.com/ephemeril", target: "_blank"}, { label: "Something else", ariaLabel: "About Careers" } ] },
-    { label: "Settings", textColor: "#fff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [ { label: "Show AI", ariaLabel: "Toggle AI Helper", type: 'toggle', id: 'ai-toggle' }, { label: "Show Chapel Schedule", ariaLabel: "Toggle Chapel Schedule display", type: 'toggle', id: 'chapel-toggle' }, { label: "Settings", ariaLabel: "Open Settings Page", type: 'button', onClick: handleSettingsToggle } ] },
-    { label: "Legacy Sites", textColor: "#ffffffff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [ { label: "Legacy", ariaLabel: "Legacy Site", href: "https://biolawizard.com/", target: "_blank" }, { label: "Extra Old", ariaLabel: "Extra Old Site", href: "https://google.com", target: "_blank" }, { label: "Caf Website", ariaLabel: "Caf Website", href: "https://cafebiola.cafebonappetit.com/cafe/cafe-biola/", target: "_blank" } ] }
-  ], [handleSettingsToggle]);
+    { label: "Help", textColor: "#fff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [ { label: "Donate to me :)", ariaLabel: "donate", href: "https://buymeacoffee.com/ephemeril", target: "_blank"}, { label: "Send Feedback (not functioning)", ariaLabel: "Feedback" } ] },
+    { label: "Preferences", textColor: "#fff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [ { label: "Show AI", ariaLabel: "Toggle AI Helper", type: 'toggle', id: 'ai-toggle' }, { label: "Show Chapel Schedule", ariaLabel: "Toggle Chapel Schedule display", type: 'toggle', id: 'chapel-toggle' }, { label: "Settings", ariaLabel: "Open or Close Settings Page", type: 'button', onClick: toggleSettingsPage } ] },
+    { label: "Legacy Sites", textColor: "#ffffffff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [ { label: "Legacy", ariaLabel: "Legacy Site", href: "https://legacy.biolawizard.com/", target: "_blank" }, { label: "Chapel Website", ariaLabel: "Extra Old Site", href: "https://www.biola.edu/chapel", target: "_blank" }, { label: "Caf Website", ariaLabel: "Caf Website", href: "https://cafebiola.cafebonappetit.com/cafe/cafe-biola/", target: "_blank" } ] }
+  ], [toggleSettingsPage]);
 
   const triggerCardResize = useCallback(() => {
     if (mealCardRef.current && mealContentRef.current) {
@@ -397,9 +429,23 @@ function App() {
 
   const handleExplainStation = async (station) => {
     const stationName = station.name;
-    if (aiResponses[stationName]) { closeAiResponse(stationName); return; }
+    if (aiResponses[stationName]) {
+      closeAiResponse(stationName);
+      return;
+    }
     setAiResponses(prev => ({ ...prev, [stationName]: { isLoading: true, data: null, error: null } }));
-    const payload = { station_meals: station.options.map(opt => ({ title: opt.meal, description: opt.description || "" })) };
+    
+    const payload = { 
+        station_meals: station.options.map(opt => ({ 
+            title: opt.meal, 
+            description: opt.description || "" 
+        })) 
+    };
+
+    if (isSarcasticAi) {
+        payload.extra_prompt = "Be cynical, the meal will probably not taste very good.";
+    }
+
     try {
       const response = await fetch(stationWebhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!response.ok) throw new Error(`Webhook failed with status: ${response.status}`);
@@ -505,7 +551,7 @@ function App() {
           <GlassSurface ref={mealCardRef} borderRadius={20} className="meal-card" distortionScale={-80}>
             <div className="card-content" ref={mealContentRef}>
               {isSettingsVisible ? (
-                  <SettingsPage ref={settingsContentRef} onBack={handleBackToMeals} isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(!isChapelVisible)} isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)} isSarcasticAi={isSarcasticAi} onToggleSarcasticAi={() => setIsSarcasticAi(!isSarcasticAi)} silkAngle1={silkAngle1} setSilkAngle1={setSilkAngle1} silkAngle2={silkAngle2} setSilkAngle2={setSilkAngle2} silkSaturation={silkSaturation} setSilkSaturation={setSilkSaturation} triggerCardResize={triggerCardResize} />
+                  <SettingsPage ref={settingsContentRef} onBack={toggleSettingsPage} isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(!isChapelVisible)} isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)} isSarcasticAi={isSarcasticAi} onToggleSarcasticAi={() => setIsSarcasticAi(!isSarcasticAi)} silkAngle1={silkAngle1} setSilkAngle1={setSilkAngle1} silkAngle2={silkAngle2} setSilkAngle2={setSilkAngle2} silkSaturation={silkSaturation} setSilkSaturation={setSilkSaturation} triggerCardResize={triggerCardResize} />
               ) : ( <div ref={pageContentRef}>{renderCardContent()}</div> )}
               {!isSettingsVisible && (
                 <div className="inner-nav-bar">

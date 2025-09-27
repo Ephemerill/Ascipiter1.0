@@ -1,25 +1,26 @@
-import { animate, motion, useMotionValue, useMotionValueEvent, useTransform } from 'motion/react';
-import { useEffect, useRef, useState } from 'react';
-import { Icon } from '@chakra-ui/react';
-import { RiVolumeDownFill, RiVolumeUpFill } from 'react-icons/ri';
-
+import { animate, motion, useMotionValue, useMotionValueEvent, useTransform } from 'framer-motion';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import './../App.css';
 
 const MAX_OVERFLOW = 50;
 
 export default function ElasticSlider({
+  value,
+  onChange,
   defaultValue = 50,
   startingValue = 0,
   maxValue = 100,
   className = '',
   isStepped = false,
   stepSize = 1,
-  leftIcon = <Icon as={RiVolumeDownFill} />,
-  rightIcon = <Icon as={RiVolumeUpFill} />
+  leftIcon,
+  rightIcon
 }) {
   return (
     <div className={`slider-container ${className}`}>
       <Slider
+        value={value}
+        onChange={onChange}
         defaultValue={defaultValue}
         startingValue={startingValue}
         maxValue={maxValue}
@@ -32,17 +33,12 @@ export default function ElasticSlider({
   );
 }
 
-function Slider({ defaultValue, startingValue, maxValue, isStepped, stepSize, leftIcon, rightIcon }) {
-  const [value, setValue] = useState(defaultValue);
+function Slider({ value, onChange, startingValue, maxValue, isStepped, stepSize, leftIcon, rightIcon }) {
   const sliderRef = useRef(null);
   const [region, setRegion] = useState('middle');
   const clientX = useMotionValue(0);
   const overflow = useMotionValue(0);
   const scale = useMotionValue(1);
-
-  useEffect(() => {
-    setValue(defaultValue);
-  }, [defaultValue]);
 
   useMotionValueEvent(clientX, 'change', latest => {
     if (sliderRef.current) {
@@ -74,7 +70,9 @@ function Slider({ defaultValue, startingValue, maxValue, isStepped, stepSize, le
       }
 
       newValue = Math.min(Math.max(newValue, startingValue), maxValue);
-      setValue(newValue);
+      if (onChange) {
+        onChange(newValue);
+      }
       clientX.jump(e.clientX);
     }
   };
@@ -91,7 +89,6 @@ function Slider({ defaultValue, startingValue, maxValue, isStepped, stepSize, le
   const getRangePercentage = () => {
     const totalRange = maxValue - startingValue;
     if (totalRange === 0) return 0;
-
     return ((value - startingValue) / totalRange) * 100;
   };
 
@@ -166,7 +163,6 @@ function Slider({ defaultValue, startingValue, maxValue, isStepped, stepSize, le
           {rightIcon}
         </motion.div>
       </motion.div>
-      <p className="value-indicator">{Math.round(value)}</p>
     </>
   );
 }
@@ -175,9 +171,7 @@ function decay(value, max) {
   if (max === 0) {
     return 0;
   }
-
   const entry = value / max;
   const sigmoid = 2 * (1 / (1 + Math.exp(-entry)) - 0.5);
-
   return sigmoid * max;
 }
