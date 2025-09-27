@@ -96,8 +96,17 @@ body, html, #root {
 }
 
 .glass-surface--fallback {
-  backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturation, 1.2));
-  -webkit-backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturation, 1.2));
+  /* This version removes backdrop-filter to avoid the WebKit bug. */
+  /* It uses a subtle gradient for a "lighter" glass look without the blur. */
+
+  /* MORE WORK CAN BE DONE HERE */
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 255, 255, 0.15),
+    rgba(255, 255, 255, 0.05)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .card-content {
