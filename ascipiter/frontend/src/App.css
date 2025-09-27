@@ -887,18 +887,25 @@ body, html, #root {
     transform: translate(-50%, -50%) scale(1.1);
 }
 
-.saturation-slider-container {
+.sliders-wrapper {
     width: 100%;
     padding-top: 24px;
     margin-top: 24px;
     border-top: 1px solid rgba(255,255,255,0.1);
     display: flex;
     flex-direction: column;
+    gap: 20px;
+}
+
+.slider-control {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
     align-items: center;
 }
 
-.saturation-slider-container label {
+.slider-control label {
     font-size: 1rem;
     opacity: 0.8;
     line-height: 1.6;
