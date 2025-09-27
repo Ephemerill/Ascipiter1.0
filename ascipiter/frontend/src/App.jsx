@@ -318,8 +318,22 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation,
 // --- Settings Page Component ---
 const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi, silkAngle1, setSilkAngle1, silkAngle2, setSilkAngle2, silkSaturation, setSilkSaturation, silkLightness, setSilkLightness, triggerCardResize }, ref) => {
   const [activeTab, setActiveTab] = useState('General');
+  const [loadData, setLoadData] = useState(null); // State to hold analytics data
   const settingsPages = ['General', 'AI Settings', 'Appearance', 'About'];
   const contentRef = useRef(null);
+
+  // Fetch load data when the "About" tab becomes active
+  useEffect(() => {
+    if (activeTab === 'About') {
+      // Assuming your Flask server is running on port 5001
+      fetch('http://127.0.0.1:5001/api/get-loads')
+        .then(res => res.json())
+        .then(data => {
+            setLoadData(data);
+        })
+        .catch(console.error);
+    }
+  }, [activeTab]);
 
   useLayoutEffect(() => {
     if (contentRef.current && triggerCardResize) {
@@ -363,7 +377,21 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
             </div>
         );
       case 'About':
-        return <div><h3>About</h3><p>Biola Wizard 2.0</p><p>This Tool Was Built With The Assistance of AI</p><p>Unknown number of loads</p></div>;
+        // Today's data is the first item in the array from our API
+        const todayData = loadData ? loadData[0] : null;
+        return (
+            <div>
+                <h3>About</h3>
+                <p>Biola Wizard 2.0</p>
+                <p>This Tool Was Built With The Assistance of AI</p>
+                {/* Conditionally render the load count */}
+                {loadData ? (
+                    <p>Page loads today: {todayData.count}</p>
+                ) : (
+                    <p>Loading stats...</p>
+                )}
+            </div>
+        );
       default: return null;
     }
   };
@@ -403,7 +431,6 @@ function App() {
   const [silkSaturation, setSilkSaturation] = useState(() => parseFloat(getCookie('silkSaturation')) || 5);
   const [silkLightness, setSilkLightness] = useState(() => parseFloat(getCookie('silkLightness')) || 70);
 
-
   const [aiResponses, setAiResponses] = useState({});
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
 
@@ -413,8 +440,28 @@ function App() {
   const pageContentRef = useRef(null);
   const chapelContentRef = useRef(null);
   const settingsContentRef = useRef(null);
+  
+  // --- FIX FOR DOUBLE COUNT ---
+  // This ref will persist across re-renders and prevent the effect from running twice.
+  const effectRan = useRef(false);
 
   const stationWebhookUrl = "https://n8n.biolawizard.com/webhook/3666ea52-5393-408a-a9ef-f7c78f9c5eb4";
+
+  // --- Record Page Load ---
+  useEffect(() => {
+    // Check if the effect has already run. In development, it will be false on the first run.
+    if (effectRan.current === false) {
+      fetch('http://127.0.0.1:5001/api/record-load', { method: 'POST' })
+        .catch(err => console.error("Could not record page load:", err));
+    }
+
+    // This cleanup function runs when the component unmounts.
+    // We set the ref to true here so the effect doesn't run on the second mount in Strict Mode.
+    return () => {
+      effectRan.current = true;
+    };
+  }, []); // The empty array ensures this runs only once per mount cycle.
+
 
   const toggleSettingsPage = useCallback(() => {
     if (isSettingsVisible) {
@@ -497,8 +544,8 @@ function App() {
   }, [isChapelVisible]);
 
   useEffect(() => {
-    const fetchMenu = async () => { setIsMenuLoading(true); try { const response = await fetch('/api/menu'); if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`); const data = await response.json(); setMenuData(data); } catch (e) { setMenuError(e.message); } finally { setIsMenuLoading(false); } };
-    const fetchChapel = async () => { setIsChapelLoading(true); try { const response = await fetch('/api/chapel'); if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`); const data = await response.json(); setChapelData(data); } catch (e) { setChapelError(e.message); } finally { setIsChapelLoading(false); } };
+    const fetchMenu = async () => { setIsMenuLoading(true); try { const response = await fetch('http://127.0.0.1:5001/api/menu'); if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`); const data = await response.json(); setMenuData(data); } catch (e) { setMenuError(e.message); } finally { setIsMenuLoading(false); } };
+    const fetchChapel = async () => { setIsChapelLoading(true); try { const response = await fetch('http://127.0.0.1:5001/api/chapel'); if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`); const data = await response.json(); setChapelData(data); } catch (e) { setChapelError(e.message); } finally { setIsChapelLoading(false); } };
     fetchMenu();
     fetchChapel();
   }, []);
