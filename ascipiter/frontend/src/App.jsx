@@ -332,7 +332,7 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
             </div>
         );
       case 'About':
-        return <div><h3>About</h3><p>Biola Wizard 2.0</p><p>This Tool Was Built With The Assistance of AI</p><p>Unknown number of loads</p></div>;
+        return <div><h3>About</h3><p>Biola Wizard 2.0</p><p>This Tool Was Built With The Assistance of AI</p><p>By Gabriel Losh</p></div>;
       default: return null;
     }
   };
