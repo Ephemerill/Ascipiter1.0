@@ -9,6 +9,37 @@ import MealItem from './components/MealItem';
 import AiResponse from './components/AiResponse';
 import ToggleSwitch from './components/ToggleSwitch';
 import ElasticSlider from './components/ElasticSlider';
+import FeedbackModal from './components/Feedback.jsx';
+
+// --- Console Log Catcher ---
+// This code captures console messages so they can be sent with feedback.
+let consoleLogs = [];
+const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+
+console.log = (...args) => {
+    consoleLogs.push(`LOG: ${JSON.stringify(args)}`);
+    originalLog(...args);
+};
+console.error = (...args) => {
+    consoleLogs.push(`ERROR: ${JSON.stringify(args)}`);
+    originalError(...args);
+};
+console.warn = (...args) => {
+    consoleLogs.push(`WARN: ${JSON.stringify(args)}`);
+    originalWarn(...args);
+};
+// ------------------------------
+
+// --- Toast Component ---
+const Toast = ({ message, show }) => {
+  return (
+    <div className={`toast-notification ${show ? 'show' : ''}`}>
+      {message}
+    </div>
+  );
+};
 
 // --- Helper functions for managing cookies ---
 const setCookie = (name, value, days) => {
@@ -433,6 +464,8 @@ function App() {
 
   const [aiResponses, setAiResponses] = useState({});
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+  const [isFeedbackVisible, setIsFeedbackVisible] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: '' });
 
   const mealCardRef = useRef(null);
   const chapelCardRef = useRef(null);
@@ -441,27 +474,26 @@ function App() {
   const chapelContentRef = useRef(null);
   const settingsContentRef = useRef(null);
   
-  // --- FIX FOR DOUBLE COUNT ---
-  // This ref will persist across re-renders and prevent the effect from running twice.
   const effectRan = useRef(false);
 
   const stationWebhookUrl = "https://n8n.biolawizard.com/webhook/3666ea52-5393-408a-a9ef-f7c78f9c5eb4";
 
-  // --- Record Page Load ---
   useEffect(() => {
-    // Check if the effect has already run. In development, it will be false on the first run.
     if (effectRan.current === false) {
       fetch('http://127.0.0.1:5001/api/record-load', { method: 'POST' })
         .catch(err => console.error("Could not record page load:", err));
     }
-
-    // This cleanup function runs when the component unmounts.
-    // We set the ref to true here so the effect doesn't run on the second mount in Strict Mode.
     return () => {
       effectRan.current = true;
     };
-  }, []); // The empty array ensures this runs only once per mount cycle.
+  }, []);
 
+  const showToast = useCallback((message) => {
+    setToast({ show: true, message });
+    setTimeout(() => {
+      setToast({ show: false, message: '' });
+    }, 2500); // Toast will disappear after 2.5 seconds
+  }, []);
 
   const toggleSettingsPage = useCallback(() => {
     if (isSettingsVisible) {
@@ -485,11 +517,15 @@ function App() {
     }
   }, [isSettingsVisible]);
 
+  const toggleFeedbackModal = useCallback(() => {
+    setIsFeedbackVisible(v => !v);
+  }, []);
+
   const navItemsTemplate = useMemo(() => [
-    { label: "Help", textColor: "#fff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [ { label: "Donate to me :)", ariaLabel: "donate", href: "https://buymeacoffee.com/ephemeril", target: "_blank"}, { label: "Send Feedback (not functioning)", ariaLabel: "Feedback" } ] },
+    { label: "Help", textColor: "#fff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [ { label: "Donate to me :)", ariaLabel: "donate", href: "https://buymeacoffee.com/ephemeril", target: "_blank"}, { label: "Send Feedback", ariaLabel: "Send Feedback", type: 'button', onClick: toggleFeedbackModal } ] },
     { label: "Preferences", textColor: "#fff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [ { label: "Show AI", ariaLabel: "Toggle AI Helper", type: 'toggle', id: 'ai-toggle' }, { label: "Show Chapel Schedule", ariaLabel: "Toggle Chapel Schedule display", type: 'toggle', id: 'chapel-toggle' }, { label: "Settings", ariaLabel: "Open or Close Settings Page", type: 'button', onClick: toggleSettingsPage } ] },
     { label: "Legacy Sites", textColor: "#ffffffff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [ { label: "Legacy", ariaLabel: "Legacy Site", href: "https://legacy.biolawizard.com/", target: "_blank" }, { label: "Chapel Website", ariaLabel: "Extra Old Site", href: "https://www.biola.edu/chapel", target: "_blank" }, { label: "Caf Website", ariaLabel: "Caf Website", href: "https://cafebiola.cafebonappetit.com/cafe/cafe-biola/", target: "_blank" } ] }
-  ], [toggleSettingsPage]);
+  ], [toggleSettingsPage, toggleFeedbackModal]);
 
   const triggerCardResize = useCallback(() => {
     if (mealCardRef.current && mealContentRef.current) {
@@ -624,6 +660,7 @@ function App() {
 
   return (
     <div className="App">
+      <Toast message={toast.message} show={toast.show} />
       <div className="silk-container"><Silk speed={5} scale={1} color1={silkColor1} color2={silkColor2} noiseIntensity={1.5} rotation={0} /></div>
       <div className="content-area">
         <CardNav logo={logo} logoAlt="Company Logo" items={navItemsTemplate} menuColor="#fff" buttonBgColor="transparent" buttonTextColor="#fff" ease="power3.out" isGlass={true} glassBlur={15} glassTransparency={0.05} distortionScale={-80} ctaButtonText="--°F" isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(!isChapelVisible)} isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)} />
@@ -655,6 +692,14 @@ function App() {
           <GlassSurface ref={chapelCardRef} borderRadius={20} className="chapel-card"><div className="card-content chapel-card-wrapper" ref={chapelContentRef}>{renderChapelContent()}</div></GlassSurface>
         </div>
       </div>
+      
+      {isFeedbackVisible && (
+        <div className="feedback-modal-backdrop">
+           <GlassSurface borderRadius={20} className="feedback-modal-container">
+              <FeedbackModal onClose={toggleFeedbackModal} consoleLogs={consoleLogs} showToast={showToast} />
+           </GlassSurface>
+        </div>
+      )}
     </div>
   );
 }

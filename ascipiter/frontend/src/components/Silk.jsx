@@ -119,7 +119,14 @@ const Silk = ({ speed = 5, scale = 1, color1 = '#7B7481', color2 = '#ADD8E6', no
   }, [color1, color2]);
 
   return (
-    <Canvas dpr={[1, 2]} frameloop="always">
+    <Canvas 
+      dpr={[1, 2]} 
+      frameloop="always"
+      // THIS IS THE CRUCIAL CHANGE
+      // It tells WebGL to keep the image data in the buffer after it has been rendered,
+      // which allows html2canvas to access it.
+      gl={{ preserveDrawingBuffer: true }}
+    >
       <SilkPlane ref={meshRef} uniforms={uniforms} />
     </Canvas>
   );
