@@ -98,8 +98,6 @@ body, html, #root {
 .glass-surface--fallback {
   /* This version removes backdrop-filter to avoid the WebKit bug. */
   /* It uses a subtle gradient for a "lighter" glass look without the blur. */
-
-  /* MORE WORK CAN BE DONE HERE */
   background: linear-gradient(
     to bottom right,
     rgba(255, 255, 255, 0.15),
@@ -672,81 +670,6 @@ body, html, #root {
   }
 }
 
-
-@media (max-width: 768px) {
-  .card-container {
-    flex-direction: column;
-    align-items: center;
-  }
-  .meal-card,
-  .chapel-card {
-    width: 100% !important;
-    flex: none !important;
-  }
-  
-  .card-nav-container {
-    width: 90%;
-    margin-top: 1.2em;
-  }
-
-  .card-nav-top {
-    padding: 0 1rem;
-    justify-content: space-between;
-  }
-
-  .hamburger-menu {
-    order: 2;
-  }
-
-  .logo-container {
-    position: static;
-    transform: none;
-    order: 1;
-  }
-
-  .card-nav-cta-button {
-    display: none;
-  }
-
-  .card-nav-content {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding: 0.5rem;
-    bottom: 0;
-    justify-content: flex-start;
-  }
-
-  .nav-card {
-    height: auto;
-    min-height: 60px;
-    flex: 1 1 auto;
-    max-height: none;
-  }
-
-  .nav-card-label {
-    font-size: 18px;
-  }
-
-  .nav-card-link {
-    font-size: 15px;
-  }
-}
-.text-type {
-  display: inline-block;
-  white-space: pre-wrap;
-}
-
-.text-type__cursor {
-  margin-left: 0.25rem;
-  display: inline-block;
-  opacity: 1;
-}
-
-.text-type__cursor--hidden {
-  display: none;
-}
-
 /* --- Settings Page Styles --- */
 .settings-container {
   color: white;
@@ -1050,4 +973,110 @@ body, html, #root {
     opacity: 0.8;
     line-height: 1.6;
     color: white;
+}
+
+.text-type {
+  display: inline-block;
+  white-space: pre-wrap;
+}
+
+.text-type__cursor {
+  margin-left: 0.25rem;
+  display: inline-block;
+  opacity: 1;
+}
+
+.text-type__cursor--hidden {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .card-container {
+    flex-direction: column;
+    align-items: center;
+  }
+  .meal-card,
+  .chapel-card {
+    width: 100% !important;
+    flex: none !important;
+  }
+  
+  .card-nav-container {
+    width: 90%;
+    margin-top: 1.2em;
+  }
+
+  .card-nav-top {
+    padding: 0 1rem;
+    justify-content: space-between;
+  }
+
+  .hamburger-menu {
+    order: 2;
+  }
+
+  .logo-container {
+    position: static;
+    transform: none;
+    order: 1;
+  }
+
+  .card-nav-cta-button {
+    display: none;
+  }
+
+  .card-nav-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 0.5rem;
+    bottom: 0;
+    justify-content: flex-start;
+  }
+
+  .nav-card {
+    height: auto;
+    min-height: 60px;
+    flex: 1 1 auto;
+    max-height: none;
+  }
+
+  .nav-card-label {
+    font-size: 18px;
+  }
+
+  .nav-card-link {
+    font-size: 15px;
+  }
+
+  /* --- NEW: Responsive Settings Menu Styles --- */
+  .settings-body {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .settings-nav {
+    flex-direction: column; /* Revert to a vertical list */
+    flex-basis: auto;
+    overflow-x: hidden;  /* Remove horizontal scrolling */
+    padding-bottom: 0; /* Reset padding */
+    margin: 0; /* Reset margin */
+  }
+
+  .settings-nav-item {
+    width: 100%; /* Make buttons full-width */
+  }
+  
+  /* Remove mobile-specific overrides that are no longer needed */
+  .settings-nav-item:first-child,
+  .settings-nav-item:last-child {
+    margin: 0;
+  }
+
+  .settings-content {
+    border-left: none; /* Remove side border */
+    padding-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.2); /* Add top border */
+    padding-top: 1.5rem;
+  }
 }
