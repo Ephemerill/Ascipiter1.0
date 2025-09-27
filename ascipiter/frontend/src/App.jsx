@@ -356,8 +356,7 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
   // Fetch load data when the "About" tab becomes active
   useEffect(() => {
     if (activeTab === 'About') {
-      // Assuming your Flask server is running on port 5001
-      fetch('http://127.0.0.1:5001/api/get-loads')
+      fetch('/api/get-loads') // <-- FIXED: Changed to relative path
         .then(res => res.json())
         .then(data => {
             setLoadData(data);
@@ -480,7 +479,7 @@ function App() {
 
   useEffect(() => {
     if (effectRan.current === false) {
-      fetch('http://127.0.0.1:5001/api/record-load', { method: 'POST' })
+      fetch('/api/record-load', { method: 'POST' }) // <-- FIXED: Changed to relative path
         .catch(err => console.error("Could not record page load:", err));
     }
     return () => {
@@ -580,8 +579,8 @@ function App() {
   }, [isChapelVisible]);
 
   useEffect(() => {
-    const fetchMenu = async () => { setIsMenuLoading(true); try { const response = await fetch('http://127.0.0.1:5001/api/menu'); if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`); const data = await response.json(); setMenuData(data); } catch (e) { setMenuError(e.message); } finally { setIsMenuLoading(false); } };
-    const fetchChapel = async () => { setIsChapelLoading(true); try { const response = await fetch('http://127.0.0.1:5001/api/chapel'); if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`); const data = await response.json(); setChapelData(data); } catch (e) { setChapelError(e.message); } finally { setIsChapelLoading(false); } };
+    const fetchMenu = async () => { setIsMenuLoading(true); try { const response = await fetch('/api/menu'); if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`); const data = await response.json(); setMenuData(data); } catch (e) { setMenuError(e.message); } finally { setIsMenuLoading(false); } };
+    const fetchChapel = async () => { setIsChapelLoading(true); try { const response = await fetch('/api/chapel'); if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`); const data = await response.json(); setChapelData(data); } catch (e) { setChapelError(e.message); } finally { setIsChapelLoading(false); } };
     fetchMenu();
     fetchChapel();
   }, []);
