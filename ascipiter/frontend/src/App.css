@@ -540,6 +540,14 @@ body, html, #root {
 }
 
 /* --- UPDATED STYLES FOR CHAPEL DISPLAY --- */
+.chapel-credit-counter {
+  text-align: center;
+  font-weight: 500;
+  margin-top: -1rem; /* Pull up towards the title */
+  margin-bottom: 1.25rem; /* Space before the list */
+  opacity: 0.9;
+}
+
 .chapel-events-list {
   display: flex;
   flex-direction: column;

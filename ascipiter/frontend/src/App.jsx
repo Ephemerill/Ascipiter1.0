@@ -347,7 +347,7 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation,
 };
 
 // --- Settings Page Component ---
-const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi, silkAngle1, setSilkAngle1, silkAngle2, setSilkAngle2, silkSaturation, setSilkSaturation, silkLightness, setSilkLightness, triggerCardResize }, ref) => {
+const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isCreditsVisible, onToggleCreditsVisible, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi, silkAngle1, setSilkAngle1, silkAngle2, setSilkAngle2, silkSaturation, setSilkSaturation, silkLightness, setSilkLightness, triggerCardResize }, ref) => {
   const [activeTab, setActiveTab] = useState('General');
   const [loadData, setLoadData] = useState(null); // State to hold analytics data
   const settingsPages = ['General', 'AI Settings', 'Appearance', 'About'];
@@ -356,7 +356,7 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
   // Fetch load data when the "About" tab becomes active
   useEffect(() => {
     if (activeTab === 'About') {
-      fetch('/api/get-loads') // <-- FIXED: Changed to relative path
+      fetch('/api/get-loads')
         .then(res => res.json())
         .then(data => {
             setLoadData(data);
@@ -382,6 +382,7 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
             <h3>General Settings</h3>
             <p>Configure general application settings here.</p>
             <ToggleSwitch label={isChapelVisible ? "Hide Chapel Schedule" : "Show Chapel Schedule"} isToggled={isChapelVisible} onToggle={onToggleChapel} />
+            <ToggleSwitch label={isCreditsVisible ? "Hide Credit Counter" : "Show Credit Counter"} isToggled={isCreditsVisible} onToggle={onToggleCreditsVisible} />
           </div>
         );
       case 'AI Settings':
@@ -453,6 +454,7 @@ function App() {
   const [chapelError, setChapelError] = useState(null);
 
   const [isChapelVisible, setIsChapelVisible] = useState(() => getCookie('chapelVisible') === 'true');
+  const [isCreditsVisible, setIsCreditsVisible] = useState(() => getCookie('creditsVisible') !== 'false'); // Default to true
   const [isAiVisible, setIsAiVisible] = useState(() => getCookie('aiVisible') === 'true');
   const [isSarcasticAi, setIsSarcasticAi] = useState(() => getCookie('sarcasticAiVisible') === 'true');
 
@@ -479,7 +481,7 @@ function App() {
 
   useEffect(() => {
     if (effectRan.current === false) {
-      fetch('/api/record-load', { method: 'POST' }) // <-- FIXED: Changed to relative path
+      fetch('/api/record-load', { method: 'POST' })
         .catch(err => console.error("Could not record page load:", err));
     }
     return () => {
@@ -594,6 +596,7 @@ function App() {
   useEffect(() => { const timer = setTimeout(triggerCardResize, 150); return () => clearTimeout(timer); }, [aiResponses, triggerCardResize]);
 
   useEffect(() => { setCookie('chapelVisible', isChapelVisible, 365); }, [isChapelVisible]);
+  useEffect(() => { setCookie('creditsVisible', isCreditsVisible, 365); }, [isCreditsVisible]);
   useEffect(() => { setCookie('aiVisible', isAiVisible, 365); }, [isAiVisible]);
   useEffect(() => { setCookie('sarcasticAiVisible', isSarcasticAi, 365); }, [isSarcasticAi]);
   useEffect(() => { setCookie('silkAngle1', silkAngle1, 365); }, [silkAngle1]);
@@ -633,13 +636,27 @@ function App() {
     if (isChapelLoading) return <><h2 className="meal-period-title">Chapel</h2><p>Loading Chapel...</p></>;
     if (chapelError) return <><h2 className="meal-period-title">Chapel</h2><p>Chapel events unavailable.</p></>;
     if (!chapelData || chapelData.length === 0) return <><h2 className="meal-period-title">Chapel</h2><p>No chapel events listed.</p></>;
-    const upcomingEvents = chapelData.map(event => ({ ...event, dateObject: parseChapelDate(event.time) })).filter(event => event.dateObject && event.dateObject > new Date()).sort((a, b) => a.dateObject - b.dateObject).slice(0, 5);
+
+    // Get all events that are in the future
+    const allUpcomingEvents = chapelData
+      .map(event => ({ ...event, dateObject: parseChapelDate(event.time) }))
+      .filter(event => event.dateObject && event.dateObject > new Date());
+    
+    // The total count of remaining events
+    const remainingCredits = allUpcomingEvents.length;
+
+    // Get the first 5 upcoming events to display in the list
+    const eventsToDisplay = allUpcomingEvents
+      .sort((a, b) => a.dateObject - b.dateObject)
+      .slice(0, 5);
+
     return (
       <>
         <h2 className="meal-period-title">Upcoming Chapel</h2>
+        {isCreditsVisible && <p className="chapel-credit-counter">Total credits remaining: {remainingCredits}</p>}
         <div className="chapel-events-list">
-          {upcomingEvents.length > 0 ? (
-            upcomingEvents.map((event, index) => {
+          {eventsToDisplay.length > 0 ? (
+            eventsToDisplay.map((event, index) => {
               const [datePart, timePart] = event.time.split(/ at /i);
               return (
                 <div key={index} className="chapel-event-card">
@@ -671,6 +688,7 @@ function App() {
                     ref={settingsContentRef} 
                     onBack={toggleSettingsPage} 
                     isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(!isChapelVisible)} 
+                    isCreditsVisible={isCreditsVisible} onToggleCreditsVisible={() => setIsCreditsVisible(!isCreditsVisible)}
                     isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)} 
                     isSarcasticAi={isSarcasticAi} onToggleSarcasticAi={() => setIsSarcasticAi(!isSarcasticAi)} 
                     silkAngle1={silkAngle1} setSilkAngle1={setSilkAngle1} 
