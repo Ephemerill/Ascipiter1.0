@@ -49,7 +49,8 @@ const setCookie = (name, value, days) => {
     date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
     expires = "; expires=" + date.toUTCString();
   }
-  document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
+  // --- FIX: Correctly handles boolean 'false' values ---
+  document.cookie = name + "=" + value + expires + "; path=/; SameSite=Lax";
 };
 
 const getCookie = (name) => {
