@@ -415,6 +415,7 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
             <div>
                 <h3>About</h3>
                 <p>Biola Wizard 2.0</p>
+                <p>By Gabriel Losh</p>
                 <p>This Tool Was Built With The Assistance of AI</p>
                 {/* Conditionally render the load count */}
                 {loadData ? (

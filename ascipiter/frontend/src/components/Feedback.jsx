@@ -91,7 +91,7 @@ export default function FeedbackModal({ onClose, consoleLogs, showToast }) {
             <h3>Submit Feedback</h3>
             <form onSubmit={handleSubmit}>
                 <textarea
-                    placeholder="Tell us what you think or describe the issue..."
+                    placeholder="Tell me what you think or describe the issue..."
                     value={feedbackText}
                     onChange={(e) => setFeedbackText(e.target.value)}
                     rows={5}
