@@ -583,11 +583,70 @@ function App() {
   }, [isChapelVisible]);
 
   useEffect(() => {
-    const fetchMenu = async () => { setIsMenuLoading(true); try { const response = await fetch('/api/menu'); if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`); const data = await response.json(); setMenuData(data); } catch (e) { setMenuError(e.message); } finally { setIsMenuLoading(false); } };
-    const fetchChapel = async () => { setIsChapelLoading(true); try { const response = await fetch('/api/chapel'); if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`); const data = await response.json(); setChapelData(data); } catch (e) { setChapelError(e.message); } finally { setIsChapelLoading(false); } };
-    fetchMenu();
+    let isMounted = true; // Avoid state updates on unmounted component
+
+    const fetchMenuData = async () => {
+      // 1. Fetch initial cached data for a fast UI load
+      setIsMenuLoading(true);
+      try {
+        const initialResponse = await fetch('/api/menu');
+        if (!initialResponse.ok) throw new Error(`HTTP error! Status: ${initialResponse.status}`);
+        const initialData = await initialResponse.json();
+        if (isMounted) {
+          setMenuData(initialData);
+        }
+      } catch (e) {
+        if (isMounted) setMenuError(e.message);
+      } finally {
+        if (isMounted) setIsMenuLoading(false);
+      }
+
+      // 2. In the background, trigger a refresh to get the latest data if stale
+      try {
+        const refreshResponse = await fetch('/api/menu/refresh');
+        
+        // If status is 204, data is fresh or unchanged. No need to do anything.
+        if (refreshResponse.status === 204) {
+          console.log("Background menu check: Data is up to date.");
+          return;
+        }
+        if (!refreshResponse.ok) {
+           throw new Error(`Background refresh failed: ${refreshResponse.status}`);
+        }
+        
+        const newData = await refreshResponse.json();
+        if (isMounted) {
+          console.log("New menu data found in background. Updating UI.");
+          setMenuData(newData);
+        }
+      } catch (e) {
+        // Don't show a UI error for a failed background task, just log it.
+        console.error("Error during background menu refresh:", e);
+      }
+    };
+
+    const fetchChapel = async () => {
+      if (!isMounted) return;
+      setIsChapelLoading(true);
+      try {
+        const response = await fetch('/api/chapel');
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const data = await response.json();
+        if (isMounted) setChapelData(data);
+      } catch (e) {
+        if (isMounted) setChapelError(e.message);
+      } finally {
+        if (isMounted) setIsChapelLoading(false);
+      }
+    };
+
+    fetchMenuData();
     fetchChapel();
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   useLayoutEffect(() => { if (!isMenuLoading && mealContentRef.current && pageContentRef.current && !isSettingsVisible) { const content = pageContentRef.current; gsap.set(content, { opacity: 0 }); triggerCardResize(); gsap.to(content, { opacity: 1, duration: 0.4, delay: 0.3 }); } }, [activePage, isMenuLoading, triggerCardResize, isSettingsVisible]);
   useLayoutEffect(() => { if (isSettingsVisible && settingsContentRef.current) { triggerCardResize(); gsap.fromTo(settingsContentRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, delay: 0.1, ease: 'power2.out' }); } }, [isSettingsVisible, triggerCardResize]);
