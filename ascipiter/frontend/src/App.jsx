@@ -455,6 +455,10 @@ function App() {
   const [menuError, setMenuError] = useState(null);
   const [chapelError, setChapelError] = useState(null);
 
+  // States to control delayed visibility of loading indicators
+  const [showMenuLoader, setShowMenuLoader] = useState(false);
+  const [showChapelLoader, setShowChapelLoader] = useState(false);
+
   const [isChapelVisible, setIsChapelVisible] = useState(() => getCookie('chapelVisible') === 'true');
   const [isCreditsVisible, setIsCreditsVisible] = useState(() => getCookie('creditsVisible') !== 'false'); // Default to true
   const [isAiVisible, setIsAiVisible] = useState(() => getCookie('aiVisible') === 'true');
@@ -478,6 +482,7 @@ function App() {
   const settingsContentRef = useRef(null);
   
   const effectRan = useRef(false);
+  const isInitialLoad = useRef(true); // Ref to track the first load animation
 
   const stationWebhookUrl = "https://n8n.biolawizard.com/webhook/3666ea52-5393-408a-a9ef-f7c78f9c5eb4";
 
@@ -583,11 +588,14 @@ function App() {
   }, [isChapelVisible]);
 
   useEffect(() => {
-    let isMounted = true; // Avoid state updates on unmounted component
+    let isMounted = true;
 
     const fetchMenuData = async () => {
-      // 1. Fetch initial cached data for a fast UI load
-      setIsMenuLoading(true);
+      // Only show loading text if the fetch takes longer than 300ms
+      const loaderTimer = setTimeout(() => {
+        if (isMounted) setShowMenuLoader(true);
+      }, 300);
+
       try {
         const initialResponse = await fetch('/api/menu');
         if (!initialResponse.ok) throw new Error(`HTTP error! Status: ${initialResponse.status}`);
@@ -598,36 +606,31 @@ function App() {
       } catch (e) {
         if (isMounted) setMenuError(e.message);
       } finally {
+        clearTimeout(loaderTimer);
         if (isMounted) setIsMenuLoading(false);
       }
 
-      // 2. In the background, trigger a refresh to get the latest data if stale
+      // Background refresh logic remains the same
       try {
         const refreshResponse = await fetch('/api/menu/refresh');
-        
-        // If status is 204, data is fresh or unchanged. No need to do anything.
-        if (refreshResponse.status === 204) {
-          console.log("Background menu check: Data is up to date.");
-          return;
-        }
-        if (!refreshResponse.ok) {
-           throw new Error(`Background refresh failed: ${refreshResponse.status}`);
-        }
-        
+        if (refreshResponse.status === 204) return;
+        if (!refreshResponse.ok) throw new Error(`Background refresh failed: ${refreshResponse.status}`);
         const newData = await refreshResponse.json();
         if (isMounted) {
           console.log("New menu data found in background. Updating UI.");
           setMenuData(newData);
         }
       } catch (e) {
-        // Don't show a UI error for a failed background task, just log it.
         console.error("Error during background menu refresh:", e);
       }
     };
 
     const fetchChapel = async () => {
       if (!isMounted) return;
-      setIsChapelLoading(true);
+      const loaderTimer = setTimeout(() => {
+        if (isMounted) setShowChapelLoader(true);
+      }, 300);
+
       try {
         const response = await fetch('/api/chapel');
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -636,6 +639,7 @@ function App() {
       } catch (e) {
         if (isMounted) setChapelError(e.message);
       } finally {
+        clearTimeout(loaderTimer);
         if (isMounted) setIsChapelLoading(false);
       }
     };
@@ -646,9 +650,36 @@ function App() {
     return () => {
       isMounted = false;
     };
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []);
 
-  useLayoutEffect(() => { if (!isMenuLoading && mealContentRef.current && pageContentRef.current && !isSettingsVisible) { const content = pageContentRef.current; gsap.set(content, { opacity: 0 }); triggerCardResize(); gsap.to(content, { opacity: 1, duration: 0.4, delay: 0.3 }); } }, [activePage, isMenuLoading, triggerCardResize, isSettingsVisible]);
+  useLayoutEffect(() => {
+    if (isMenuLoading || !mealCardRef.current || !mealContentRef.current || !pageContentRef.current || isSettingsVisible) {
+      return;
+    }
+  
+    const card = mealCardRef.current;
+    const content = pageContentRef.current;
+    const targetHeight = mealContentRef.current.scrollHeight;
+  
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+  
+      const tl = gsap.timeline();
+      tl.fromTo(card, 
+        { height: 0, opacity: 0 },
+        { height: targetHeight, opacity: 1, duration: 0.8, ease: 'expo.out' }
+      );
+      tl.fromTo(content, 
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' },
+        "-=0.6"
+      );
+    } else {
+      triggerCardResize();
+      gsap.fromTo(content, { opacity: 0 }, { opacity: 1, duration: 0.4, delay: 0.1 });
+    }
+  }, [isMenuLoading, activePage, isSettingsVisible, triggerCardResize]);
+
   useLayoutEffect(() => { if (isSettingsVisible && settingsContentRef.current) { triggerCardResize(); gsap.fromTo(settingsContentRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, delay: 0.1, ease: 'power2.out' }); } }, [isSettingsVisible, triggerCardResize]);
   useLayoutEffect(() => { if (isAiVisible) { gsap.fromTo(".explain-button", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.5, stagger: 0.05, ease: 'back.out(1.7)' }); } }, [isAiVisible, activePage, menuData]);
   useLayoutEffect(() => { const mealCard = mealCardRef.current, chapelCard = chapelCardRef.current; const onAnimationComplete = () => { triggerCardResize(); triggerChapelResize(); }; const tl = gsap.timeline({ onComplete: onAnimationComplete }); if (isChapelVisible) { gsap.set(chapelCard, { display: 'block', height: 'auto' }); tl.to(mealCard, { width: '65%', duration: 0.6, ease: 'power3.inOut' }).fromTo(chapelCard, { width: '0%', opacity: 0, xPercent: -20 }, { width: '32%', opacity: 1, xPercent: 0, duration: 0.6, ease: 'power3.inOut' }, "<"); } else { if (chapelCard && chapelCard.style.display !== 'none') { const chapelContent = chapelContentRef.current; tl.to(chapelContent, { opacity: 0, duration: 0.25, ease: 'power1.in' }).to(mealCard, { width: '75%', duration: 0.6, ease: 'power3.inOut' }).to(chapelCard, { width: '0%', opacity: 0, xPercent: -20, duration: 0.6, ease: 'power3.inOut' }, "<").set(chapelCard, { display: 'none' }).set(chapelContent, { opacity: 1 }); } else { gsap.set(mealCard, { width: '75%' }); } } }, [isChapelVisible, triggerCardResize, triggerChapelResize]);
@@ -670,7 +701,9 @@ function App() {
   const silkColor2 = useMemo(() => `hsl(${silkAngle2}, ${silkSaturation}%, ${silkLightness}%)`, [silkAngle2, silkSaturation, silkLightness]);
 
   const renderCardContent = () => {
-    if (isMenuLoading) return <h2 style={{ textAlign: 'center' }}>Loading Menu</h2>;
+    if (isMenuLoading) {
+        return showMenuLoader ? <h2 style={{ textAlign: 'center' }}>Loading Menu</h2> : null;
+    }
     if (menuError) return <><h2>Oops!</h2><p>Could not load menu: {menuError}</p></>;
     if (!menuData) return <h2>No Menu Data</h2>;
     const mealPeriodData = menuData[activePage];
@@ -694,7 +727,9 @@ function App() {
   };
 
   const renderChapelContent = () => {
-    if (isChapelLoading) return <><h2 className="meal-period-title">Chapel</h2><p>Loading Chapel...</p></>;
+    if (isChapelLoading) {
+        return showChapelLoader ? <><h2 className="meal-period-title">Chapel</h2><p>Loading Chapel...</p></> : null;
+    }
     if (chapelError) return <><h2 className="meal-period-title">Chapel</h2><p>Chapel events unavailable.</p></>;
     if (!chapelData || chapelData.length === 0) return <><h2 className="meal-period-title">Chapel</h2><p>No chapel events listed.</p></>;
 
