@@ -591,7 +591,7 @@ function App() {
     let isMounted = true;
 
     const fetchMenuData = async () => {
-      // Only show loading text if the fetch takes longer than 300ms
+      // Step 1: Immediately fetch cached data for a fast initial load.
       const loaderTimer = setTimeout(() => {
         if (isMounted) setShowMenuLoader(true);
       }, 300);
@@ -610,16 +610,18 @@ function App() {
         if (isMounted) setIsMenuLoading(false);
       }
 
-      // Background refresh logic remains the same
+      // Step 2: In the background, silently ask the server to refresh its data.
       try {
         const refreshResponse = await fetch('/api/menu/refresh');
-        if (refreshResponse.status === 204) return;
-        if (!refreshResponse.ok) throw new Error(`Background refresh failed: ${refreshResponse.status}`);
-        const newData = await refreshResponse.json();
-        if (isMounted) {
-          console.log("New menu data found in background. Updating UI.");
-          setMenuData(newData);
+        // If status is 200, it means new data was found. Update the UI.
+        if (refreshResponse.status === 200) {
+            const newData = await refreshResponse.json();
+            if (isMounted) {
+              console.log("New menu data found in background. Updating UI.");
+              setMenuData(newData);
+            }
         }
+        // If status is 204, data was the same. Do nothing.
       } catch (e) {
         console.error("Error during background menu refresh:", e);
       }
