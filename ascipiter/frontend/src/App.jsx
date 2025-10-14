@@ -10,6 +10,7 @@ import AiResponse from './components/AiResponse';
 import ToggleSwitch from './components/ToggleSwitch';
 import ElasticSlider from './components/ElasticSlider';
 import FeedbackModal from './components/Feedback.jsx';
+import { getAnonymousId } from './utils/anonymousId';
 
 // --- Console Log Catcher ---
 // This code captures console messages so they can be sent with feedback.
@@ -49,7 +50,6 @@ const setCookie = (name, value, days) => {
     date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
     expires = "; expires=" + date.toUTCString();
   }
-  // --- FIX: Correctly handles boolean 'false' values ---
   document.cookie = name + "=" + value + expires + "; path=/; SameSite=Lax";
 };
 
@@ -99,7 +99,7 @@ const getCurrentMealPeriod = () => {
   return 'breakfast'; // Default
 };
 
-// --- NEW: Data structure for daily meal hours ---
+// --- Data structure for daily meal hours ---
 const DAILY_MEAL_HOURS = [
   // Sunday (0)
   { breakfast: null, lunch: '11:30 AM - 2:30 PM', dinner: '5:00 PM - 7:30 PM' },
@@ -117,7 +117,7 @@ const DAILY_MEAL_HOURS = [
   { breakfast: '9:00 AM - 10:00 AM', lunch: '10:00 AM - 1:00 PM', dinner: '5:00 PM - 7:30 PM' }
 ];
 
-// --- NEW: Helper function to get meal hours for the current day ---
+// --- Helper function to get meal hours for the current day ---
 const getMealHoursForToday = (mealPeriod) => {
     const todayIndex = new Date().getDay();
     const hours = DAILY_MEAL_HOURS[todayIndex][mealPeriod];
@@ -373,13 +373,12 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation,
 };
 
 // --- Settings Page Component ---
-const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isCreditsVisible, onToggleCreditsVisible, showMealHours, onToggleShowMealHours, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi, silkAngle1, setSilkAngle1, silkAngle2, setSilkAngle2, silkSaturation, setSilkSaturation, silkLightness, setSilkLightness, triggerCardResize }, ref) => {
+const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isCreditsVisible, onToggleCreditsVisible, showMealHours, onToggleShowMealHours, isRatingVisible, onToggleRatingVisible, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi, silkAngle1, setSilkAngle1, silkAngle2, setSilkAngle2, silkSaturation, setSilkSaturation, silkLightness, setSilkLightness, triggerCardResize }, ref) => {
   const [activeTab, setActiveTab] = useState('General');
-  const [loadData, setLoadData] = useState(null); // State to hold analytics data
+  const [loadData, setLoadData] = useState(null);
   const settingsPages = ['General', 'AI Settings', 'Appearance', 'About'];
   const contentRef = useRef(null);
 
-  // Fetch load data when the "About" tab becomes active
   useEffect(() => {
     if (activeTab === 'About') {
       fetch('/api/get-loads')
@@ -393,7 +392,6 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
 
   useLayoutEffect(() => {
     if (contentRef.current && triggerCardResize) {
-        // Give react time to render the new content before resizing
         const timer = setTimeout(triggerCardResize, 50);
         gsap.fromTo(contentRef.current, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' });
         return () => clearTimeout(timer);
@@ -410,6 +408,7 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
             <ToggleSwitch label={isChapelVisible ? "Hide Chapel Schedule" : "Show Chapel Schedule"} isToggled={isChapelVisible} onToggle={onToggleChapel} />
             <ToggleSwitch label={isCreditsVisible ? "Hide Credit Counter" : "Show Credit Counter"} isToggled={isCreditsVisible} onToggle={onToggleCreditsVisible} />
             <ToggleSwitch label={showMealHours ? "Hide Meal Times" : "Show Meal Times"} isToggled={showMealHours} onToggle={onToggleShowMealHours} />
+            <ToggleSwitch label={isRatingVisible ? "Hide Rating System" : "Show Rating System"} isToggled={isRatingVisible} onToggle={onToggleRatingVisible} />
           </div>
         );
       case 'AI Settings':
@@ -435,7 +434,6 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
             </div>
         );
       case 'About':
-        // Today's data is the first item in the array from our API
         const todayData = loadData ? loadData[0] : null;
         return (
             <div>
@@ -443,7 +441,6 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
                 <p>Biola Wizard 2.0</p>
                 <p>By Gabriel Losh</p>
                 <p>This Tool Was Built With The Assistance of AI</p>
-                {/* Conditionally render the load count */}
                 {loadData ? (
                     <p>Page loads today: {todayData.count}</p>
                 ) : (
@@ -480,14 +477,15 @@ function App() {
   const [isChapelLoading, setIsChapelLoading] = useState(true);
   const [menuError, setMenuError] = useState(null);
   const [chapelError, setChapelError] = useState(null);
+  const [anonymousId, setAnonymousId] = useState(null);
 
-  // States to control delayed visibility of loading indicators
   const [showMenuLoader, setShowMenuLoader] = useState(false);
   const [showChapelLoader, setShowChapelLoader] = useState(false);
 
   const [isChapelVisible, setIsChapelVisible] = useState(() => getCookie('chapelVisible') === 'true');
-  const [isCreditsVisible, setIsCreditsVisible] = useState(() => getCookie('creditsVisible') !== 'false'); // Default to true
-  const [showMealHours, setShowMealHours] = useState(() => getCookie('showMealHours') !== 'false'); // Default to true
+  const [isCreditsVisible, setIsCreditsVisible] = useState(() => getCookie('creditsVisible') !== 'false');
+  const [showMealHours, setShowMealHours] = useState(() => getCookie('showMealHours') !== 'false');
+  const [isRatingVisible, setIsRatingVisible] = useState(() => getCookie('ratingVisible') !== 'false'); // New state
   const [isAiVisible, setIsAiVisible] = useState(() => getCookie('aiVisible') === 'true');
   const [isSarcasticAi, setIsSarcasticAi] = useState(() => getCookie('sarcasticAiVisible') === 'true');
 
@@ -509,13 +507,17 @@ function App() {
   const settingsContentRef = useRef(null);
   
   const effectRan = useRef(false);
-  const isInitialLoad = useRef(true); // Ref to track the first load animation
+  const isInitialLoad = useRef(true);
 
   const stationWebhookUrl = "https://n8n.biolawizard.com/webhook/3666ea52-5393-408a-a9ef-f7c78f9c5eb4";
 
   useEffect(() => {
+    setAnonymousId(getAnonymousId());
+  }, []);
+
+  useEffect(() => {
     if (effectRan.current === false) {
-      fetch('/api/record-load', { method: 'POST' })
+      fetch('http://localhost:5001/api/record-load', { method: 'POST' })
         .catch(err => console.error("Could not record page load:", err));
     }
     return () => {
@@ -527,7 +529,7 @@ function App() {
     setToast({ show: true, message });
     setTimeout(() => {
       setToast({ show: false, message: '' });
-    }, 2500); // Toast will disappear after 2.5 seconds
+    }, 2500);
   }, []);
 
   const toggleSettingsPage = useCallback(() => {
@@ -616,15 +618,15 @@ function App() {
 
   useEffect(() => {
     let isMounted = true;
+    const API_BASE_URL = 'http://localhost:5001/api';
 
     const fetchMenuData = async () => {
-      // Step 1: Immediately fetch cached data for a fast initial load.
       const loaderTimer = setTimeout(() => {
         if (isMounted) setShowMenuLoader(true);
       }, 300);
 
       try {
-        const initialResponse = await fetch('/api/menu');
+        const initialResponse = await fetch(`${API_BASE_URL}/menu`);
         if (!initialResponse.ok) throw new Error(`HTTP error! Status: ${initialResponse.status}`);
         const initialData = await initialResponse.json();
         if (isMounted) {
@@ -637,10 +639,8 @@ function App() {
         if (isMounted) setIsMenuLoading(false);
       }
 
-      // Step 2: In the background, silently ask the server to refresh its data.
       try {
-        const refreshResponse = await fetch('/api/menu/refresh');
-        // If status is 200, it means new data was found. Update the UI.
+        const refreshResponse = await fetch(`${API_BASE_URL}/menu/refresh`);
         if (refreshResponse.status === 200) {
             const newData = await refreshResponse.json();
             if (isMounted) {
@@ -648,7 +648,6 @@ function App() {
               setMenuData(newData);
             }
         }
-        // If status is 204, data was the same. Do nothing.
       } catch (e) {
         console.error("Error during background menu refresh:", e);
       }
@@ -661,7 +660,7 @@ function App() {
       }, 300);
 
       try {
-        const response = await fetch('/api/chapel');
+        const response = await fetch(`${API_BASE_URL}/chapel`);
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
         if (isMounted) setChapelData(data);
@@ -694,15 +693,8 @@ function App() {
       isInitialLoad.current = false;
   
       const tl = gsap.timeline();
-      tl.fromTo(card, 
-        { height: 0, opacity: 0 },
-        { height: targetHeight, opacity: 1, duration: 0.8, ease: 'expo.out' }
-      );
-      tl.fromTo(content, 
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' },
-        "-=0.6"
-      );
+      tl.fromTo(card, { height: 0, opacity: 0 }, { height: targetHeight, opacity: 1, duration: 0.8, ease: 'expo.out' });
+      tl.fromTo(content, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, "-=0.6");
     } else {
       triggerCardResize();
       gsap.fromTo(content, { opacity: 0 }, { opacity: 1, duration: 0.4, delay: 0.1 });
@@ -719,13 +711,13 @@ function App() {
   useEffect(() => { setCookie('chapelVisible', isChapelVisible, 365); }, [isChapelVisible]);
   useEffect(() => { setCookie('creditsVisible', isCreditsVisible, 365); }, [isCreditsVisible]);
   useEffect(() => { setCookie('showMealHours', showMealHours, 365); }, [showMealHours]);
+  useEffect(() => { setCookie('ratingVisible', isRatingVisible, 365); }, [isRatingVisible]); // Save rating visibility
   useEffect(() => { setCookie('aiVisible', isAiVisible, 365); }, [isAiVisible]);
   useEffect(() => { setCookie('sarcasticAiVisible', isSarcasticAi, 365); }, [isSarcasticAi]);
   useEffect(() => { setCookie('silkAngle1', silkAngle1, 365); }, [silkAngle1]);
   useEffect(() => { setCookie('silkAngle2', silkAngle2, 365); }, [silkAngle2]);
   useEffect(() => { setCookie('silkSaturation', silkSaturation, 365); }, [silkSaturation]);
   useEffect(() => { setCookie('silkLightness', silkLightness, 365); }, [silkLightness]);
-
 
   const silkColor1 = useMemo(() => `hsl(${silkAngle1}, ${silkSaturation}%, ${silkLightness}%)`, [silkAngle1, silkSaturation, silkLightness]);
   const silkColor2 = useMemo(() => `hsl(${silkAngle2}, ${silkSaturation}%, ${silkLightness}%)`, [silkAngle2, silkSaturation, silkLightness]);
@@ -758,7 +750,7 @@ function App() {
           return (
             <div key={index} className="station">
               <div className="station-header"><h3 className="station-name">{station.name}</h3>{isAiVisible && <button className="explain-button" onClick={() => handleExplainStation(station)}>explain this</button>}</div>
-              <ul className="meal-list">{station.options.map((item, itemIndex) => <MealItem key={itemIndex} item={{...item, meal: capitalizeWords(item.meal)}} onToggle={triggerCardResize} />)}</ul>
+              <ul className="meal-list">{station.options.map((item, itemIndex) => <MealItem key={itemIndex} item={{...item, meal: capitalizeWords(item.meal)}} onToggle={triggerCardResize} anonymousId={anonymousId} stationName={station.name} isRatingVisible={isRatingVisible} />)}</ul>
               {!!aiResponses[station.name] && <div id={`ai-response-${stationId}`}><AiResponse responseState={aiResponses[station.name]} onClose={() => closeAiResponse(station.name)} onCharTyped={triggerCardResize} /></div>}
             </div>
           );
@@ -774,15 +766,12 @@ function App() {
     if (chapelError) return <><h2 className="meal-period-title">Chapel</h2><p>Chapel events unavailable.</p></>;
     if (!chapelData || chapelData.length === 0) return <><h2 className="meal-period-title">Chapel</h2><p>No chapel events listed.</p></>;
 
-    // Get all events that are in the future
     const allUpcomingEvents = chapelData
       .map(event => ({ ...event, dateObject: parseChapelDate(event.time) }))
       .filter(event => event.dateObject && event.dateObject > new Date());
     
-    // The total count of remaining events
     const remainingCredits = allUpcomingEvents.length;
 
-    // Get the first 5 upcoming events to display in the list
     const eventsToDisplay = allUpcomingEvents
       .sort((a, b) => a.dateObject - b.dateObject)
       .slice(0, 5);
@@ -827,6 +816,7 @@ function App() {
                     isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(!isChapelVisible)} 
                     isCreditsVisible={isCreditsVisible} onToggleCreditsVisible={() => setIsCreditsVisible(!isCreditsVisible)}
                     showMealHours={showMealHours} onToggleShowMealHours={() => setShowMealHours(!showMealHours)}
+                    isRatingVisible={isRatingVisible} onToggleRatingVisible={() => setIsRatingVisible(!isRatingVisible)}
                     isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)} 
                     isSarcasticAi={isSarcasticAi} onToggleSarcasticAi={() => setIsSarcasticAi(!isSarcasticAi)} 
                     silkAngle1={silkAngle1} setSilkAngle1={setSilkAngle1} 
