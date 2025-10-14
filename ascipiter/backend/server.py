@@ -10,7 +10,6 @@ import os
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # Import the functions from your scraper files
-# Make sure these files exist in the same directory or adjust the import path
 from scrape_menu import get_menu_data_for_template
 from scrape_weather import get_weather
 from scrape_chapel import get_chapel_events
@@ -19,9 +18,11 @@ from scrape_chapel import get_chapel_events
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
-# Configure CORS to allow requests from your Vite frontend
-# Replace "http://localhost:5173" with your deployed frontend URL in production
-CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "https://your-frontend-domain.com"]}})
+
+# --- IMPORTANT: UPDATE THIS LINE ---
+# Add your deployed frontend URL to this list.
+# Make sure there is NO trailing slash (e.g., use "https://mysite.com" NOT "https://mysite.com/")
+CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "https://biolawizard.com"]}})
 
 
 # --- FILE PATH CONFIGURATION ---
@@ -76,7 +77,7 @@ def write_chapel_cache(data):
 def get_ratings_db_connection():
     """Establishes a connection to the ratings database."""
     conn = sqlite3.connect(RATINGS_DB)
-    conn.row_factory = sqlite3.Row # This allows accessing columns by name
+    conn.row_factory = sqlite3.Row
     return conn
 
 
