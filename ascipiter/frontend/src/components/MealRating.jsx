@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { gsap } from 'gsap';
 import Star from './Star';
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // --- Helper to calculate gradient color from rating ---
 const getRatingColor = (rating) => {
