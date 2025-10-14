@@ -19,8 +19,9 @@ from scrape_chapel import get_chapel_events
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
-# Configure CORS to allow requests from your Vite frontend (default port 5173)
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
+# Configure CORS to allow requests from your Vite frontend
+# Replace "http://localhost:5173" with your deployed frontend URL in production
+CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "https://your-frontend-domain.com"]}})
 
 
 # --- FILE PATH CONFIGURATION ---
@@ -124,32 +125,16 @@ def menu_refresh_endpoint():
 # --- RATING ENDPOINTS ---
 @app.route('/api/rating/<mealId>', methods=['GET'])
 def get_rating_data(mealId):
-    """
-    Fetches both the aggregated rating and a specific user's rating for a meal.
-    """
     anonymousId = request.args.get('anonymousId')
     if not anonymousId:
         return jsonify({"error": "anonymousId is required"}), 400
 
     conn = get_ratings_db_connection()
-    
-    # Get aggregated rating
     agg_rating_record = conn.execute('SELECT * FROM ratings WHERE mealId = ?', (mealId,)).fetchone()
-    
-    # Get user's specific rating
-    voter_record = conn.execute(
-        'SELECT rating FROM voters WHERE mealId = ? AND anonymousId = ?',
-        (mealId, anonymousId)
-    ).fetchone()
-    
+    voter_record = conn.execute('SELECT rating FROM voters WHERE mealId = ? AND anonymousId = ?', (mealId, anonymousId)).fetchone()
     conn.close()
 
-    # Prepare the response payload
-    response_data = {
-        "averageRating": 0,
-        "ratingCount": 0,
-        "userRating": 0
-    }
+    response_data = {"averageRating": 0, "ratingCount": 0, "userRating": 0}
 
     if agg_rating_record:
         response_data["averageRating"] = agg_rating_record['totalStars'] / agg_rating_record['ratingCount'] if agg_rating_record['ratingCount'] > 0 else 0
@@ -162,11 +147,8 @@ def get_rating_data(mealId):
 
 @app.route('/api/rate-meal', methods=['POST'])
 def rate_meal():
-    """Submits or updates a rating for a meal."""
     data = request.get_json()
-    mealId = data.get('mealId')
-    anonymousId = data.get('anonymousId')
-    new_rating = data.get('rating')
+    mealId, anonymousId, new_rating = data.get('mealId'), data.get('anonymousId'), data.get('rating')
 
     if not all([mealId, anonymousId, new_rating]):
         return jsonify({"error": "Missing data"}), 400
@@ -175,19 +157,13 @@ def rate_meal():
     cursor = conn.cursor()
 
     try:
-        voter_record = cursor.execute(
-            'SELECT rating FROM voters WHERE mealId = ? AND anonymousId = ?',
-            (mealId, anonymousId)
-        ).fetchone()
+        voter_record = cursor.execute('SELECT rating FROM voters WHERE mealId = ? AND anonymousId = ?', (mealId, anonymousId)).fetchone()
 
         if voter_record:
-            # UPDATE VOTE LOGIC
             old_rating = voter_record['rating']
             cursor.execute('UPDATE voters SET rating = ? WHERE mealId = ? AND anonymousId = ?', (new_rating, mealId, anonymousId))
             cursor.execute('UPDATE ratings SET totalStars = totalStars - ? + ? WHERE mealId = ?', (old_rating, new_rating, mealId))
-            logging.info(f"User {anonymousId} updated rating for {mealId} from {old_rating} to {new_rating}")
         else:
-            # NEW VOTE LOGIC
             cursor.execute('INSERT INTO voters (mealId, anonymousId, rating) VALUES (?, ?, ?)',(mealId, anonymousId, new_rating))
             cursor.execute('''
                 INSERT INTO ratings (mealId, totalStars, ratingCount) VALUES (?, ?, 1)
@@ -195,8 +171,6 @@ def rate_meal():
                 totalStars = totalStars + excluded.totalStars,
                 ratingCount = ratingCount + 1
             ''', (mealId, new_rating))
-            logging.info(f"User {anonymousId} submitted new rating for {mealId}: {new_rating}")
-        
         conn.commit()
     except sqlite3.Error as e:
         conn.rollback()
@@ -210,21 +184,17 @@ def rate_meal():
 @app.route('/api/chapel', methods=['GET'])
 def chapel_endpoint():
     cached_info = read_chapel_cache()
-    # Your logic for chapel data...
     if not cached_info:
-        # Placeholder to prevent errors if cache is empty
         return jsonify([])
     return jsonify(cached_info.get('data', []))
 
 
 # --- MAIN EXECUTION ---
 if __name__ == '__main__':
-    # --- SCHEDULER SETUP ---
     scheduler = BackgroundScheduler(daemon=True)
     scheduler.add_job(update_menu_cache_job, 'interval', minutes=60)
     scheduler.start()
     
-    # Run an initial scrape on startup so the app is never empty
     with app.app_context():
         logging.info("Performing initial menu scrape on startup...")
         update_menu_cache_job()

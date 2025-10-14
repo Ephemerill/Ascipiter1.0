@@ -295,42 +295,10 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation,
         setLightness(70);
     };
 
-    const LowSatIcon = () => (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" fill="url(#paint0_linear_1_2)"/>
-            <defs>
-                <linearGradient id="paint0_linear_1_2" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#E0E0E0"/>
-                    <stop offset="1" stopColor="#BDBDBD"/>
-                </linearGradient>
-            </defs>
-        </svg>
-    );
-
-    const HighSatIcon = () => (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" fill="url(#paint0_radial_1_3)"/>
-            <defs>
-                <radialGradient id="paint0_radial_1_3" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(12 12) rotate(90) scale(10)">
-                    <stop stopColor="#FF8A8A"/>
-                    <stop offset="0.5" stopColor="#82B1FF"/>
-                    <stop offset="1" stopColor="#B9F6CA"/>
-                </radialGradient>
-            </defs>
-        </svg>
-    );
-
-    const DarkIcon = () => (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" fill="#424242"/>
-        </svg>
-    );
-
-    const LightIcon = () => (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" fill="#E0E0E0"/>
-        </svg>
-    );
+    const LowSatIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="url(#paint0_linear_1_2)"/><defs><linearGradient id="paint0_linear_1_2" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop stopColor="#E0E0E0"/><stop offset="1" stopColor="#BDBDBD"/></linearGradient></defs></svg> );
+    const HighSatIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="url(#paint0_radial_1_3)"/><defs><radialGradient id="paint0_radial_1_3" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(12 12) rotate(90) scale(10)"><stop stopColor="#FF8A8A"/><stop offset="0.5" stopColor="#82B1FF"/><stop offset="1" stopColor="#B9F6CA"/></radialGradient></defs></svg> );
+    const DarkIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#424242"/></svg> );
+    const LightIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#E0E0E0"/></svg> );
 
     return (
         <div className="advanced-color-picker">
@@ -349,23 +317,11 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation,
             <div className="sliders-wrapper">
                 <div className="slider-control">
                     <label>Saturation</label>
-                    <ElasticSlider
-                        value={saturation}
-                        onChange={setSaturation}
-                        maxValue={100}
-                        leftIcon={<LowSatIcon />}
-                        rightIcon={<HighSatIcon />}
-                    />
+                    <ElasticSlider value={saturation} onChange={setSaturation} maxValue={100} leftIcon={<LowSatIcon />} rightIcon={<HighSatIcon />} />
                 </div>
                 <div className="slider-control">
                     <label>Lightness</label>
-                    <ElasticSlider
-                        value={lightness}
-                        onChange={setLightness}
-                        maxValue={100}
-                        leftIcon={<DarkIcon />}
-                        rightIcon={<LightIcon />}
-                    />
+                    <ElasticSlider value={lightness} onChange={setLightness} maxValue={100} leftIcon={<DarkIcon />} rightIcon={<LightIcon />} />
                 </div>
             </div>
         </div>
@@ -381,7 +337,7 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
 
   useEffect(() => {
     if (activeTab === 'About') {
-      fetch('/api/get-loads')
+      fetch(`${import.meta.env.VITE_API_BASE_URL}/get-loads`)
         .then(res => res.json())
         .then(data => {
             setLoadData(data);
@@ -485,7 +441,7 @@ function App() {
   const [isChapelVisible, setIsChapelVisible] = useState(() => getCookie('chapelVisible') === 'true');
   const [isCreditsVisible, setIsCreditsVisible] = useState(() => getCookie('creditsVisible') !== 'false');
   const [showMealHours, setShowMealHours] = useState(() => getCookie('showMealHours') !== 'false');
-  const [isRatingVisible, setIsRatingVisible] = useState(() => getCookie('ratingVisible') !== 'false'); // New state
+  const [isRatingVisible, setIsRatingVisible] = useState(() => getCookie('ratingVisible') !== 'false');
   const [isAiVisible, setIsAiVisible] = useState(() => getCookie('aiVisible') === 'true');
   const [isSarcasticAi, setIsSarcasticAi] = useState(() => getCookie('sarcasticAiVisible') === 'true');
 
@@ -510,6 +466,7 @@ function App() {
   const isInitialLoad = useRef(true);
 
   const stationWebhookUrl = "https://n8n.biolawizard.com/webhook/3666ea52-5393-408a-a9ef-f7c78f9c5eb4";
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
     setAnonymousId(getAnonymousId());
@@ -517,13 +474,22 @@ function App() {
 
   useEffect(() => {
     if (effectRan.current === false) {
-      fetch('http://localhost:5001/api/record-load', { method: 'POST' })
+      fetch(`${API_BASE_URL}/record-load`, { method: 'POST' })
         .catch(err => console.error("Could not record page load:", err));
-    }
-    return () => {
       effectRan.current = true;
-    };
-  }, []);
+    }
+  }, [API_BASE_URL]);
+
+  useEffect(() => { setCookie('chapelVisible', isChapelVisible, 365); }, [isChapelVisible]);
+  useEffect(() => { setCookie('creditsVisible', isCreditsVisible, 365); }, [isCreditsVisible]);
+  useEffect(() => { setCookie('showMealHours', showMealHours, 365); }, [showMealHours]);
+  useEffect(() => { setCookie('ratingVisible', isRatingVisible, 365); }, [isRatingVisible]);
+  useEffect(() => { setCookie('aiVisible', isAiVisible, 365); }, [isAiVisible]);
+  useEffect(() => { setCookie('sarcasticAiVisible', isSarcasticAi, 365); }, [isSarcasticAi]);
+  useEffect(() => { setCookie('silkAngle1', silkAngle1, 365); }, [silkAngle1]);
+  useEffect(() => { setCookie('silkAngle2', silkAngle2, 365); }, [silkAngle2]);
+  useEffect(() => { setCookie('silkSaturation', silkSaturation, 365); }, [silkSaturation]);
+  useEffect(() => { setCookie('silkLightness', silkLightness, 365); }, [silkLightness]);
 
   const showToast = useCallback((message) => {
     setToast({ show: true, message });
@@ -533,25 +499,17 @@ function App() {
   }, []);
 
   const toggleSettingsPage = useCallback(() => {
-    if (isSettingsVisible) {
-        const contentToFade = settingsContentRef.current;
-        if (!contentToFade) return;
-        gsap.to(contentToFade, {
-            opacity: 0,
-            duration: 0.4,
-            ease: 'power2.in',
-            onComplete: () => setIsSettingsVisible(false)
-        });
-    } else {
-        const contentToFade = pageContentRef.current;
-        if (!contentToFade) return;
-        gsap.to(contentToFade, {
-            opacity: 0,
-            duration: 0.4,
-            ease: 'power2.in',
-            onComplete: () => setIsSettingsVisible(true)
-        });
+    const contentToFadeOut = isSettingsVisible ? settingsContentRef.current : pageContentRef.current;
+    if (!contentToFadeOut) {
+      setIsSettingsVisible(v => !v);
+      return;
     }
+    gsap.to(contentToFadeOut, {
+        opacity: 0,
+        duration: 0.4,
+        ease: 'power2.in',
+        onComplete: () => setIsSettingsVisible(v => !v)
+    });
   }, [isSettingsVisible]);
 
   const toggleFeedbackModal = useCallback(() => {
@@ -618,35 +576,24 @@ function App() {
 
   useEffect(() => {
     let isMounted = true;
-    const API_BASE_URL = 'http://localhost:5001/api';
-
     const fetchMenuData = async () => {
-      const loaderTimer = setTimeout(() => {
-        if (isMounted) setShowMenuLoader(true);
-      }, 300);
-
+      const loaderTimer = setTimeout(() => { if (isMounted) setShowMenuLoader(true); }, 300);
       try {
         const initialResponse = await fetch(`${API_BASE_URL}/menu`);
         if (!initialResponse.ok) throw new Error(`HTTP error! Status: ${initialResponse.status}`);
         const initialData = await initialResponse.json();
-        if (isMounted) {
-          setMenuData(initialData);
-        }
+        if (isMounted) setMenuData(initialData);
       } catch (e) {
         if (isMounted) setMenuError(e.message);
       } finally {
         clearTimeout(loaderTimer);
         if (isMounted) setIsMenuLoading(false);
       }
-
       try {
         const refreshResponse = await fetch(`${API_BASE_URL}/menu/refresh`);
         if (refreshResponse.status === 200) {
             const newData = await refreshResponse.json();
-            if (isMounted) {
-              console.log("New menu data found in background. Updating UI.");
-              setMenuData(newData);
-            }
+            if (isMounted) setMenuData(newData);
         }
       } catch (e) {
         console.error("Error during background menu refresh:", e);
@@ -655,10 +602,7 @@ function App() {
 
     const fetchChapel = async () => {
       if (!isMounted) return;
-      const loaderTimer = setTimeout(() => {
-        if (isMounted) setShowChapelLoader(true);
-      }, 300);
-
+      const loaderTimer = setTimeout(() => { if (isMounted) setShowChapelLoader(true); }, 300);
       try {
         const response = await fetch(`${API_BASE_URL}/chapel`);
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -675,23 +619,17 @@ function App() {
     fetchMenuData();
     fetchChapel();
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    return () => { isMounted = false; };
+  }, [API_BASE_URL]);
 
   useLayoutEffect(() => {
-    if (isMenuLoading || !mealCardRef.current || !mealContentRef.current || !pageContentRef.current || isSettingsVisible) {
-      return;
-    }
-  
+    if (isMenuLoading || !mealCardRef.current || !mealContentRef.current || !pageContentRef.current || isSettingsVisible) return;
     const card = mealCardRef.current;
     const content = pageContentRef.current;
     const targetHeight = mealContentRef.current.scrollHeight;
   
     if (isInitialLoad.current) {
       isInitialLoad.current = false;
-  
       const tl = gsap.timeline();
       tl.fromTo(card, { height: 0, opacity: 0 }, { height: targetHeight, opacity: 1, duration: 0.8, ease: 'expo.out' });
       tl.fromTo(content, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, "-=0.6");
@@ -705,19 +643,7 @@ function App() {
   useLayoutEffect(() => { if (isAiVisible) { gsap.fromTo(".explain-button", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.5, stagger: 0.05, ease: 'back.out(1.7)' }); } }, [isAiVisible, activePage, menuData]);
   useLayoutEffect(() => { const mealCard = mealCardRef.current, chapelCard = chapelCardRef.current; const onAnimationComplete = () => { triggerCardResize(); triggerChapelResize(); }; const tl = gsap.timeline({ onComplete: onAnimationComplete }); if (isChapelVisible) { gsap.set(chapelCard, { display: 'block', height: 'auto' }); tl.to(mealCard, { width: '65%', duration: 0.6, ease: 'power3.inOut' }).fromTo(chapelCard, { width: '0%', opacity: 0, xPercent: -20 }, { width: '32%', opacity: 1, xPercent: 0, duration: 0.6, ease: 'power3.inOut' }, "<"); } else { if (chapelCard && chapelCard.style.display !== 'none') { const chapelContent = chapelContentRef.current; tl.to(chapelContent, { opacity: 0, duration: 0.25, ease: 'power1.in' }).to(mealCard, { width: '75%', duration: 0.6, ease: 'power3.inOut' }).to(chapelCard, { width: '0%', opacity: 0, xPercent: -20, duration: 0.6, ease: 'power3.inOut' }, "<").set(chapelCard, { display: 'none' }).set(chapelContent, { opacity: 1 }); } else { gsap.set(mealCard, { width: '75%' }); } } }, [isChapelVisible, triggerCardResize, triggerChapelResize]);
   useLayoutEffect(() => { if (!isChapelLoading && isChapelVisible) { const timer = setTimeout(triggerChapelResize, 50); return () => clearTimeout(timer); } }, [isChapelLoading, isChapelVisible, chapelData, triggerChapelResize]);
-
   useEffect(() => { const timer = setTimeout(triggerCardResize, 150); return () => clearTimeout(timer); }, [aiResponses, triggerCardResize]);
-
-  useEffect(() => { setCookie('chapelVisible', isChapelVisible, 365); }, [isChapelVisible]);
-  useEffect(() => { setCookie('creditsVisible', isCreditsVisible, 365); }, [isCreditsVisible]);
-  useEffect(() => { setCookie('showMealHours', showMealHours, 365); }, [showMealHours]);
-  useEffect(() => { setCookie('ratingVisible', isRatingVisible, 365); }, [isRatingVisible]); // Save rating visibility
-  useEffect(() => { setCookie('aiVisible', isAiVisible, 365); }, [isAiVisible]);
-  useEffect(() => { setCookie('sarcasticAiVisible', isSarcasticAi, 365); }, [isSarcasticAi]);
-  useEffect(() => { setCookie('silkAngle1', silkAngle1, 365); }, [silkAngle1]);
-  useEffect(() => { setCookie('silkAngle2', silkAngle2, 365); }, [silkAngle2]);
-  useEffect(() => { setCookie('silkSaturation', silkSaturation, 365); }, [silkSaturation]);
-  useEffect(() => { setCookie('silkLightness', silkLightness, 365); }, [silkLightness]);
 
   const silkColor1 = useMemo(() => `hsl(${silkAngle1}, ${silkSaturation}%, ${silkLightness}%)`, [silkAngle1, silkSaturation, silkLightness]);
   const silkColor2 = useMemo(() => `hsl(${silkAngle2}, ${silkSaturation}%, ${silkLightness}%)`, [silkAngle2, silkSaturation, silkLightness]);
