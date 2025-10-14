@@ -22,7 +22,7 @@ app = Flask(__name__)
 # --- IMPORTANT: UPDATE THIS LINE ---
 # Add your deployed frontend URL to this list.
 # Make sure there is NO trailing slash (e.g., use "https://mysite.com" NOT "https://mysite.com/")
-CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "https://biolawizard.com"]}})
+CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "https://biolawizard.com", "https://dev.biolawizard.com"]}})
 
 
 # --- FILE PATH CONFIGURATION ---
