@@ -13,6 +13,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from scrape_menu import get_menu_data_for_template
 from scrape_weather import get_weather
 from scrape_chapel import get_chapel_events
+# --- NEW: Import weekly scraper functions ---
+from scrape_weekly import find_weekly_menu_url, scrape_weekly_menu
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -28,6 +30,7 @@ CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "https://b
 # --- FILE PATH CONFIGURATION ---
 MENU_CACHE_FILE = 'menu_cache.json'
 CHAPEL_CACHE_FILE = 'chapel_cache.json'
+WEEKLY_MENU_CACHE_FILE = 'weekly_menu_cache.json' # --- NEW ---
 RATINGS_DB = 'ratings.db'
 
 
@@ -74,6 +77,29 @@ def write_chapel_cache(data):
     except IOError as e:
         logging.error(f"Error writing to chapel cache file {CHAPEL_CACHE_FILE}: {e}")
 
+# --- NEW: Weekly Menu Cache Functions ---
+def read_weekly_menu_cache():
+    if os.path.exists(WEEKLY_MENU_CACHE_FILE):
+        try:
+            with open(WEEKLY_MENU_CACHE_FILE, 'r') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            logging.error(f"Error reading weekly menu cache file {WEEKLY_MENU_CACHE_FILE}: {e}")
+    return None
+
+def write_weekly_menu_cache(data):
+    cache_content = {
+        'timestamp': datetime.datetime.utcnow().isoformat(),
+        'data': data
+    }
+    try:
+        with open(WEEKLY_MENU_CACHE_FILE, 'w') as f:
+            json.dump(cache_content, f)
+        logging.info("Successfully wrote to weekly menu cache.")
+    except IOError as e:
+        logging.error(f"Error writing to weekly menu cache file {WEEKLY_MENU_CACHE_FILE}: {e}")
+
+
 def get_ratings_db_connection():
     """Establishes a connection to the ratings database."""
     conn = sqlite3.connect(RATINGS_DB)
@@ -84,13 +110,32 @@ def get_ratings_db_connection():
 # --- BACKGROUND JOB FUNCTIONS ---
 def update_menu_cache_job():
     with app.app_context():
-        logging.info("SCHEDULER: Running scheduled menu scrape job...")
+        logging.info("SCHEDULER: Running scheduled daily menu scrape job...")
         try:
             menu_data = get_menu_data_for_template()
             write_menu_cache(menu_data)
-            logging.info("SCHEDULER: Menu cache successfully updated.")
+            logging.info("SCHEDULER: Daily menu cache successfully updated.")
         except Exception as e:
-            logging.error(f"SCHEDULER: Error during scheduled scrape: {e}")
+            logging.error(f"SCHEDULER: Error during scheduled daily scrape: {e}")
+
+# --- NEW: Weekly Menu Update Job ---
+def update_weekly_menu_cache_job():
+    with app.app_context():
+        logging.info("SCHEDULER: Running scheduled WEEKLY menu scrape job...")
+        try:
+            cafe_page_url = "https://cafebiola.cafebonappetit.com/cafe/cafe-biola/"
+            weekly_url = find_weekly_menu_url(cafe_page_url)
+            if weekly_url:
+                menu_data = scrape_weekly_menu(weekly_url)
+                if menu_data:
+                    write_weekly_menu_cache(menu_data)
+                    logging.info("SCHEDULER: Weekly menu cache successfully updated.")
+                else:
+                    logging.error("SCHEDULER: Failed to scrape weekly menu data from the found URL.")
+            else:
+                logging.error("SCHEDULER: Failed to find the weekly menu URL.")
+        except Exception as e:
+            logging.error(f"SCHEDULER: Error during scheduled weekly scrape: {e}")
 
 
 # --- API ENDPOINTS ---
@@ -98,12 +143,12 @@ def update_menu_cache_job():
 # --- MENU ENDPOINTS ---
 @app.route('/api/menu', methods=['GET'])
 def menu_endpoint():
-    logging.info("Received request for /api/menu")
+    logging.info("Received request for /api/menu (today)")
     cached_info = read_menu_cache()
     if cached_info and 'data' in cached_info:
         return jsonify(cached_info['data'])
     else:
-        logging.warning("Cache is empty. Performing initial scrape for /api/menu.")
+        logging.warning("Daily cache is empty. Performing initial scrape for /api/menu.")
         update_menu_cache_job()
         cached_info = read_menu_cache()
         return jsonify(cached_info.get('data', {}))
@@ -122,6 +167,19 @@ def menu_refresh_endpoint():
         logging.info("Client refresh scraped same data. Not updating UI.")
         write_menu_cache(old_data) 
         return ('', 204)
+
+# --- NEW: Weekly Menu Endpoint ---
+@app.route('/api/weekly-menu', methods=['GET'])
+def weekly_menu_endpoint():
+    logging.info("Received request for /api/weekly-menu")
+    cached_info = read_weekly_menu_cache()
+    if cached_info and 'data' in cached_info:
+        return jsonify(cached_info['data'])
+    else:
+        logging.warning("Weekly cache is empty. Performing initial scrape for /api/weekly-menu.")
+        update_weekly_menu_cache_job()
+        cached_info = read_weekly_menu_cache()
+        return jsonify(cached_info.get('data', {}))
 
 # --- RATING ENDPOINTS ---
 @app.route('/api/rating/<mealId>', methods=['GET'])
@@ -194,11 +252,15 @@ def chapel_endpoint():
 if __name__ == '__main__':
     scheduler = BackgroundScheduler(daemon=True)
     scheduler.add_job(update_menu_cache_job, 'interval', minutes=60)
+    # --- NEW: Add weekly job ---
+    scheduler.add_job(update_weekly_menu_cache_job, 'interval', hours=4)
     scheduler.start()
     
     with app.app_context():
-        logging.info("Performing initial menu scrape on startup...")
+        logging.info("Performing initial daily menu scrape on startup...")
         update_menu_cache_job()
+        logging.info("Performing initial weekly menu scrape on startup...")
+        update_weekly_menu_cache_job()
 
     logging.info("Starting Flask server and background scheduler.")
     app.run(debug=True, port=5001)

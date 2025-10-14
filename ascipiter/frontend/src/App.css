@@ -108,7 +108,7 @@ body, html, #root {
   color: white;
   text-align: left;
   box-sizing: border-box;
-  padding: 2rem 2rem 6rem 2rem;
+  padding: 2rem 2rem 10rem 2rem; /* Increased padding-bottom */
   width: 100%;
 }
 
@@ -390,11 +390,21 @@ body, html, #root {
   display: none;
 }
 
-.inner-nav-bar {
+/* --- MODIFIED: New container for bottom controls --- */
+.bottom-controls-container {
   position: absolute;
   bottom: 1.5rem;
   left: 1.5rem;
   right: 1.5rem;
+  display: flex;
+  flex-direction: column-reverse; /* Puts nav bar on bottom */
+  align-items: center;
+  gap: 0.75rem; /* Space between day picker and nav bar */
+}
+
+/* --- MODIFIED: inner-nav-bar styles --- */
+.inner-nav-bar {
+  width: 100%; /* Fill the new parent container */
   height: 50px;
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -432,7 +442,7 @@ body, html, #root {
 
 .meal-period-title {
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.5rem; /* Give space for content */
 }
 
 .meal-period-hours {
@@ -1312,4 +1322,90 @@ body, html, #root {
   font-size: 2.5rem; /* Large, easy-to-tap stars */
   display: flex;
   gap: 0.5rem;
+}
+
+/* --- MODIFIED: Day Picker Styles --- */
+.day-picker-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.day-picker-toggle {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.day-picker-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.day-picker-toggle .chevron-icon {
+  transition: transform 0.3s ease-in-out;
+}
+.day-picker-toggle .chevron-icon.open {
+  transform: rotate(180deg);
+}
+
+.day-options-container {
+  position: absolute;
+  bottom: 100%; /* Opens upwards */
+  margin-bottom: 8px; /* Space between toggle and menu */
+  background-color: rgba(45, 45, 45, 0.7);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: max-height 0.4s ease-in-out, opacity 0.3s ease, visibility 0s 0.4s;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.day-options-container.open {
+  max-height: 250px;
+  opacity: 1;
+  visibility: visible;
+  transition: max-height 0.4s ease-in-out, opacity 0.3s ease, visibility 0s 0s;
+}
+
+.day-option-button {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 10px 25px;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.2s, color 0.2s;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.day-option-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+.day-option-button.active {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-weight: 600;
 }

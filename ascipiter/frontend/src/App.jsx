@@ -302,12 +302,12 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation,
 
     return (
         <div className="advanced-color-picker">
-             <div className="preset-swatches-container">
-                {gradientPresets.map(p => (
-                    <button key={p.name} className="color-swatch" style={{ background: `linear-gradient(45deg, ${p.c1}, ${p.c2})` }} onClick={() => handlePresetSelect(p)} />
-                ))}
-                <button className="default-color-button" onClick={handleDefault}>Default</button>
-            </div>
+              <div className="preset-swatches-container">
+                  {gradientPresets.map(p => (
+                      <button key={p.name} className="color-swatch" style={{ background: `linear-gradient(45deg, ${p.c1}, ${p.c2})` }} onClick={() => handlePresetSelect(p)} />
+                  ))}
+                  <button className="default-color-button" onClick={handleDefault}>Default</button>
+              </div>
             <div className="arc-picker-wrapper">
                 <div ref={pickerRef} className="picker-area" onClick={(e) => handleInteraction(e, null)}>
                     <div className="picker-handle" style={{ left: `${handle1Pos.x}%`, top: `${handle1Pos.y}%`, backgroundColor: angleToHsl(angle1) }} onMouseDown={(e) => handleStart(e, 'handle1')} onTouchStart={(e) => handleStart(e, 'handle1')} />
@@ -329,7 +329,7 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation,
 };
 
 // --- Settings Page Component ---
-const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isCreditsVisible, onToggleCreditsVisible, showMealHours, onToggleShowMealHours, isRatingVisible, onToggleRatingVisible, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi, silkAngle1, setSilkAngle1, silkAngle2, setSilkAngle2, silkSaturation, setSilkSaturation, silkLightness, setSilkLightness, triggerCardResize }, ref) => {
+const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isCreditsVisible, onToggleCreditsVisible, showMealHours, onToggleShowMealHours, isRatingVisible, onToggleRatingVisible, isDayPickerVisible, onToggleDayPicker, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi, silkAngle1, setSilkAngle1, silkAngle2, setSilkAngle2, silkSaturation, setSilkSaturation, silkLightness, setSilkLightness, triggerCardResize }, ref) => {
   const [activeTab, setActiveTab] = useState('General');
   const [loadData, setLoadData] = useState(null);
   const settingsPages = ['General', 'AI Settings', 'Appearance', 'About'];
@@ -361,6 +361,7 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
           <div>
             <h3>General Settings</h3>
             <p>Configure general application settings here.</p>
+            <ToggleSwitch label={isDayPickerVisible ? "Hide Day Selector" : "Show Day Selector"} isToggled={isDayPickerVisible} onToggle={onToggleDayPicker} />
             <ToggleSwitch label={isChapelVisible ? "Hide Chapel Schedule" : "Show Chapel Schedule"} isToggled={isChapelVisible} onToggle={onToggleChapel} />
             <ToggleSwitch label={isCreditsVisible ? "Hide Credit Counter" : "Show Credit Counter"} isToggled={isCreditsVisible} onToggle={onToggleCreditsVisible} />
             <ToggleSwitch label={showMealHours ? "Hide Meal Times" : "Show Meal Times"} isToggled={showMealHours} onToggle={onToggleShowMealHours} />
@@ -435,6 +436,12 @@ function App() {
   const [chapelError, setChapelError] = useState(null);
   const [anonymousId, setAnonymousId] = useState(null);
 
+  // --- State for weekly menu and day picker ---
+  const [weeklyMenuData, setWeeklyMenuData] = useState(null);
+  const [isDayPickerOpen, setIsDayPickerOpen] = useState(false);
+  const [selectedDay, setSelectedDay] = useState('Today');
+
+
   const [showMenuLoader, setShowMenuLoader] = useState(false);
   const [showChapelLoader, setShowChapelLoader] = useState(false);
 
@@ -444,6 +451,7 @@ function App() {
   const [isRatingVisible, setIsRatingVisible] = useState(() => getCookie('ratingVisible') !== 'false');
   const [isAiVisible, setIsAiVisible] = useState(() => getCookie('aiVisible') === 'true');
   const [isSarcasticAi, setIsSarcasticAi] = useState(() => getCookie('sarcasticAiVisible') === 'true');
+  const [isDayPickerVisible, setIsDayPickerVisible] = useState(() => getCookie('dayPickerVisible') !== 'false');
 
   const [silkAngle1, setSilkAngle1] = useState(() => parseFloat(getCookie('silkAngle1')) || 258);
   const [silkAngle2, setSilkAngle2] = useState(() => parseFloat(getCookie('silkAngle2')) || 238);
@@ -486,6 +494,7 @@ function App() {
   useEffect(() => { setCookie('ratingVisible', isRatingVisible, 365); }, [isRatingVisible]);
   useEffect(() => { setCookie('aiVisible', isAiVisible, 365); }, [isAiVisible]);
   useEffect(() => { setCookie('sarcasticAiVisible', isSarcasticAi, 365); }, [isSarcasticAi]);
+  useEffect(() => { setCookie('dayPickerVisible', isDayPickerVisible, 365); }, [isDayPickerVisible]);
   useEffect(() => { setCookie('silkAngle1', silkAngle1, 365); }, [silkAngle1]);
   useEffect(() => { setCookie('silkAngle2', silkAngle2, 365); }, [silkAngle2]);
   useEffect(() => { setCookie('silkSaturation', silkSaturation, 365); }, [silkSaturation]);
@@ -615,9 +624,23 @@ function App() {
         if (isMounted) setIsChapelLoading(false);
       }
     };
+    
+    // Fetch weekly menu data
+    const fetchWeeklyMenu = async () => {
+      if (!isMounted) return;
+      try {
+        const response = await fetch(`${API_BASE_URL}/weekly-menu`);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const data = await response.json();
+        if (isMounted) setWeeklyMenuData(data);
+      } catch(e) {
+        console.error("Could not fetch weekly menu:", e);
+      }
+    };
 
     fetchMenuData();
     fetchChapel();
+    fetchWeeklyMenu();
 
     return () => { isMounted = false; };
   }, [API_BASE_URL]);
@@ -637,10 +660,10 @@ function App() {
       triggerCardResize();
       gsap.fromTo(content, { opacity: 0 }, { opacity: 1, duration: 0.4, delay: 0.1 });
     }
-  }, [isMenuLoading, activePage, isSettingsVisible, triggerCardResize]);
+  }, [isMenuLoading, activePage, isSettingsVisible, triggerCardResize, selectedDay]);
 
   useLayoutEffect(() => { if (isSettingsVisible && settingsContentRef.current) { triggerCardResize(); gsap.fromTo(settingsContentRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, delay: 0.1, ease: 'power2.out' }); } }, [isSettingsVisible, triggerCardResize]);
-  useLayoutEffect(() => { if (isAiVisible) { gsap.fromTo(".explain-button", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.5, stagger: 0.05, ease: 'back.out(1.7)' }); } }, [isAiVisible, activePage, menuData]);
+  useLayoutEffect(() => { if (isAiVisible) { gsap.fromTo(".explain-button", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.5, stagger: 0.05, ease: 'back.out(1.7)' }); } }, [isAiVisible, activePage, menuData, selectedDay]);
   useLayoutEffect(() => { const mealCard = mealCardRef.current, chapelCard = chapelCardRef.current; const onAnimationComplete = () => { triggerCardResize(); triggerChapelResize(); }; const tl = gsap.timeline({ onComplete: onAnimationComplete }); if (isChapelVisible) { gsap.set(chapelCard, { display: 'block', height: 'auto' }); tl.to(mealCard, { width: '65%', duration: 0.6, ease: 'power3.inOut' }).fromTo(chapelCard, { width: '0%', opacity: 0, xPercent: -20 }, { width: '32%', opacity: 1, xPercent: 0, duration: 0.6, ease: 'power3.inOut' }, "<"); } else { if (chapelCard && chapelCard.style.display !== 'none') { const chapelContent = chapelContentRef.current; tl.to(chapelContent, { opacity: 0, duration: 0.25, ease: 'power1.in' }).to(mealCard, { width: '75%', duration: 0.6, ease: 'power3.inOut' }).to(chapelCard, { width: '0%', opacity: 0, xPercent: -20, duration: 0.6, ease: 'power3.inOut' }, "<").set(chapelCard, { display: 'none' }).set(chapelContent, { opacity: 1 }); } else { gsap.set(mealCard, { width: '75%' }); } } }, [isChapelVisible, triggerCardResize, triggerChapelResize]);
   useLayoutEffect(() => { if (!isChapelLoading && isChapelVisible) { const timer = setTimeout(triggerChapelResize, 50); return () => clearTimeout(timer); } }, [isChapelLoading, isChapelVisible, chapelData, triggerChapelResize]);
   useEffect(() => { const timer = setTimeout(triggerCardResize, 150); return () => clearTimeout(timer); }, [aiResponses, triggerCardResize]);
@@ -648,21 +671,81 @@ function App() {
   const silkColor1 = useMemo(() => `hsl(${silkAngle1}, ${silkSaturation}%, ${silkLightness}%)`, [silkAngle1, silkSaturation, silkLightness]);
   const silkColor2 = useMemo(() => `hsl(${silkAngle2}, ${silkSaturation}%, ${silkLightness}%)`, [silkAngle2, silkSaturation, silkLightness]);
 
+  // Helper to transform weekly data to match daily data structure
+  const transformWeeklyDayMenu = (dayMenu) => {
+    if (!dayMenu) return null;
+    const transformed = {};
+    for (const mealPeriod in dayMenu) { // Breakfast, Lunch, Dinner
+        const stations = dayMenu[mealPeriod];
+        const stationArray = [];
+        for (const stationName in stations) {
+            stationArray.push({
+                name: stationName,
+                options: stations[stationName].map(mealName => ({ meal: mealName, description: null }))
+            });
+        }
+        transformed[mealPeriod.toLowerCase()] = stationArray;
+    }
+    return transformed;
+  };
+
+  // Memoized value to determine which menu to display
+  const displayedMenu = useMemo(() => {
+    if (selectedDay === 'Today' || !weeklyMenuData) {
+        return menuData;
+    }
+    const dayData = weeklyMenuData[selectedDay];
+    return transformWeeklyDayMenu(dayData);
+  }, [selectedDay, menuData, weeklyMenuData]);
+
+  // Logic to get available future days in correct order
+  const futureDays = useMemo(() => {
+    if (!weeklyMenuData) return [];
+    
+    // Canonical order
+    const dayOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    
+    // Map JS Date's getDay() index (Sun=0) to our abbreviation
+    const jsDayToAbbr = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const todayAbbr = jsDayToAbbr[new Date().getDay()];
+    
+    // Find the index of today in our canonical order
+    const todayIndexInOrder = dayOrder.indexOf(todayAbbr);
+
+    if (todayIndexInOrder === -1) {
+        return dayOrder.filter(day => weeklyMenuData[day]);
+    }
+
+    // Filter for all FUTURE days that exist in scraped data (excluding today)
+    return dayOrder.filter((day, index) => index > todayIndexInOrder && weeklyMenuData[day]);
+  }, [weeklyMenuData]);
+
+
+  const handleDaySelect = (day) => {
+    setSelectedDay(day);
+    setIsDayPickerOpen(false);
+  };
+
+
   const renderCardContent = () => {
     if (isMenuLoading) {
         return showMenuLoader ? <h2 style={{ textAlign: 'center' }}>Loading Menu</h2> : null;
     }
     if (menuError) return <><h2>Oops!</h2><p>Could not load menu: {menuError}</p></>;
-    if (!menuData) return <h2>No Menu Data</h2>;
-    const mealPeriodData = menuData[activePage];
-    const mealPeriodName = capitalizeWords(activePage);
+    if (!displayedMenu) return <h2>No Menu Data for {selectedDay}</h2>;
+
+    const mealPeriodData = displayedMenu[activePage];
+    const dayNameMap = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
+    const titleDayPart = selectedDay === 'Today' ? '' : (dayNameMap[selectedDay] || selectedDay);
+    const mealPeriodName = `${titleDayPart} ${capitalizeWords(activePage)}`.trim();
+
     const todaysHours = getMealHoursForToday(activePage);
 
     if (!mealPeriodData || mealPeriodData.length === 0) {
         return (
             <>
               <h2 className="meal-period-title">{mealPeriodName}</h2>
-              {showMealHours && <p className="meal-period-hours">{todaysHours}</p>}
+              {showMealHours && selectedDay === 'Today' && <p className="meal-period-hours">{todaysHours}</p>}
               <p>No items listed for this meal.</p>
             </>
         );
@@ -670,13 +753,13 @@ function App() {
     return (
       <div className="menu-content">
         <h2 className="meal-period-title">{mealPeriodName}</h2>
-        {showMealHours && <p className="meal-period-hours">{todaysHours}</p>}
+        {showMealHours && selectedDay === 'Today' && <p className="meal-period-hours">{todaysHours}</p>}
         {mealPeriodData.map((station, index) => {
           const stationId = station.name.replace(/\s+/g, '-');
           return (
             <div key={index} className="station">
               <div className="station-header"><h3 className="station-name">{station.name}</h3>{isAiVisible && <button className="explain-button" onClick={() => handleExplainStation(station)}>explain this</button>}</div>
-              <ul className="meal-list">{station.options.map((item, itemIndex) => <MealItem key={itemIndex} item={{...item, meal: capitalizeWords(item.meal)}} onToggle={triggerCardResize} anonymousId={anonymousId} stationName={station.name} isRatingVisible={isRatingVisible} />)}</ul>
+              <ul className="meal-list">{station.options.map((item, itemIndex) => <MealItem key={itemIndex} item={{...item, meal: capitalizeWords(item.meal)}} onToggle={triggerCardResize} anonymousId={anonymousId} stationName={station.name} isRatingVisible={isRatingVisible && selectedDay === 'Today'} />)}</ul>
               {!!aiResponses[station.name] && <div id={`ai-response-${stationId}`}><AiResponse responseState={aiResponses[station.name]} onClose={() => closeAiResponse(station.name)} onCharTyped={triggerCardResize} /></div>}
             </div>
           );
@@ -743,6 +826,7 @@ function App() {
                     isCreditsVisible={isCreditsVisible} onToggleCreditsVisible={() => setIsCreditsVisible(!isCreditsVisible)}
                     showMealHours={showMealHours} onToggleShowMealHours={() => setShowMealHours(!showMealHours)}
                     isRatingVisible={isRatingVisible} onToggleRatingVisible={() => setIsRatingVisible(!isRatingVisible)}
+                    isDayPickerVisible={isDayPickerVisible} onToggleDayPicker={() => setIsDayPickerVisible(!isDayPickerVisible)}
                     isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)} 
                     isSarcasticAi={isSarcasticAi} onToggleSarcasticAi={() => setIsSarcasticAi(!isSarcasticAi)} 
                     silkAngle1={silkAngle1} setSilkAngle1={setSilkAngle1} 
@@ -752,10 +836,26 @@ function App() {
                     triggerCardResize={triggerCardResize} />
               ) : ( <div ref={pageContentRef}>{renderCardContent()}</div> )}
               {!isSettingsVisible && (
-                <div className="inner-nav-bar">
-                  <button className={`inner-nav-button ${activePage === 'breakfast' ? 'active' : ''}`} onClick={() => setActivePage('breakfast')}>Breakfast</button>
-                  <button className={`inner-nav-button ${activePage === 'lunch' ? 'active' : ''}`} onClick={() => setActivePage('lunch')}>Lunch</button>
-                  <button className={`inner-nav-button ${activePage === 'dinner' ? 'active' : ''}`} onClick={() => setActivePage('dinner')}>Dinner</button>
+                <div className="bottom-controls-container">
+                    {isDayPickerVisible && (
+                        <div className="day-picker-container">
+                            <button className="day-picker-toggle" onClick={() => setIsDayPickerOpen(!isDayPickerOpen)}>
+                                <span>{selectedDay}</span>
+                                <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg" className={`chevron-icon ${isDayPickerOpen ? 'open' : ''}`}><path d="M1.41 0.59L6 5.17L10.59 0.59L12 2L6 8L0 2L1.41 0.59Z" fill="white"/></svg>
+                            </button>
+                            <div className={`day-options-container ${isDayPickerOpen ? 'open' : ''}`}>
+                                <button className={`day-option-button ${selectedDay === 'Today' ? 'active' : ''}`} onClick={() => handleDaySelect('Today')}>Today</button>
+                                {futureDays.map(day => (
+                                    <button key={day} className={`day-option-button ${selectedDay === day ? 'active' : ''}`} onClick={() => handleDaySelect(day)}>{day}</button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    <div className="inner-nav-bar">
+                      <button className={`inner-nav-button ${activePage === 'breakfast' ? 'active' : ''}`} onClick={() => setActivePage('breakfast')}>Breakfast</button>
+                      <button className={`inner-nav-button ${activePage === 'lunch' ? 'active' : ''}`} onClick={() => setActivePage('lunch')}>Lunch</button>
+                      <button className={`inner-nav-button ${activePage === 'dinner' ? 'active' : ''}`} onClick={() => setActivePage('dinner')}>Dinner</button>
+                    </div>
                 </div>
               )}
             </div>
