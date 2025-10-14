@@ -99,6 +99,31 @@ const getCurrentMealPeriod = () => {
   return 'breakfast'; // Default
 };
 
+// --- NEW: Data structure for daily meal hours ---
+const DAILY_MEAL_HOURS = [
+  // Sunday (0)
+  { breakfast: null, lunch: '11:30 AM - 2:30 PM', dinner: '5:00 PM - 7:30 PM' },
+  // Monday (1)
+  { breakfast: '7:00 AM - 11:00 AM', lunch: '11:00 AM - 4:00 PM', dinner: '4:00 PM - 8:00 PM' },
+  // Tuesday (2)
+  { breakfast: '7:00 AM - 11:00 AM', lunch: '11:00 AM - 4:00 PM', dinner: '4:00 PM - 8:00 PM' },
+  // Wednesday (3)
+  { breakfast: '7:00 AM - 11:00 AM', lunch: '11:00 AM - 4:00 PM', dinner: '4:00 PM - 8:00 PM' },
+  // Thursday (4)
+  { breakfast: '7:00 AM - 11:00 AM', lunch: '11:00 AM - 4:00 PM', dinner: '4:00 PM - 8:00 PM' },
+  // Friday (5)
+  { breakfast: '7:00 AM - 11:00 AM', lunch: '11:00 AM - 4:00 PM', dinner: '4:00 PM - 7:30 PM' },
+  // Saturday (6)
+  { breakfast: '9:00 AM - 10:00 AM', lunch: '10:00 AM - 1:00 PM', dinner: '5:00 PM - 7:30 PM' }
+];
+
+// --- NEW: Helper function to get meal hours for the current day ---
+const getMealHoursForToday = (mealPeriod) => {
+    const todayIndex = new Date().getDay();
+    const hours = DAILY_MEAL_HOURS[todayIndex][mealPeriod];
+    return hours || "Not served today";
+};
+
 
 // Helper function to calculate time remaining
 const calculateTimeRemaining = (eventDate) => {
@@ -348,7 +373,7 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation,
 };
 
 // --- Settings Page Component ---
-const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isCreditsVisible, onToggleCreditsVisible, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi, silkAngle1, setSilkAngle1, silkAngle2, setSilkAngle2, silkSaturation, setSilkSaturation, silkLightness, setSilkLightness, triggerCardResize }, ref) => {
+const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isCreditsVisible, onToggleCreditsVisible, showMealHours, onToggleShowMealHours, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi, silkAngle1, setSilkAngle1, silkAngle2, setSilkAngle2, silkSaturation, setSilkSaturation, silkLightness, setSilkLightness, triggerCardResize }, ref) => {
   const [activeTab, setActiveTab] = useState('General');
   const [loadData, setLoadData] = useState(null); // State to hold analytics data
   const settingsPages = ['General', 'AI Settings', 'Appearance', 'About'];
@@ -384,6 +409,7 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
             <p>Configure general application settings here.</p>
             <ToggleSwitch label={isChapelVisible ? "Hide Chapel Schedule" : "Show Chapel Schedule"} isToggled={isChapelVisible} onToggle={onToggleChapel} />
             <ToggleSwitch label={isCreditsVisible ? "Hide Credit Counter" : "Show Credit Counter"} isToggled={isCreditsVisible} onToggle={onToggleCreditsVisible} />
+            <ToggleSwitch label={showMealHours ? "Hide Meal Times" : "Show Meal Times"} isToggled={showMealHours} onToggle={onToggleShowMealHours} />
           </div>
         );
       case 'AI Settings':
@@ -461,6 +487,7 @@ function App() {
 
   const [isChapelVisible, setIsChapelVisible] = useState(() => getCookie('chapelVisible') === 'true');
   const [isCreditsVisible, setIsCreditsVisible] = useState(() => getCookie('creditsVisible') !== 'false'); // Default to true
+  const [showMealHours, setShowMealHours] = useState(() => getCookie('showMealHours') !== 'false'); // Default to true
   const [isAiVisible, setIsAiVisible] = useState(() => getCookie('aiVisible') === 'true');
   const [isSarcasticAi, setIsSarcasticAi] = useState(() => getCookie('sarcasticAiVisible') === 'true');
 
@@ -691,6 +718,7 @@ function App() {
 
   useEffect(() => { setCookie('chapelVisible', isChapelVisible, 365); }, [isChapelVisible]);
   useEffect(() => { setCookie('creditsVisible', isCreditsVisible, 365); }, [isCreditsVisible]);
+  useEffect(() => { setCookie('showMealHours', showMealHours, 365); }, [showMealHours]);
   useEffect(() => { setCookie('aiVisible', isAiVisible, 365); }, [isAiVisible]);
   useEffect(() => { setCookie('sarcasticAiVisible', isSarcasticAi, 365); }, [isSarcasticAi]);
   useEffect(() => { setCookie('silkAngle1', silkAngle1, 365); }, [silkAngle1]);
@@ -710,10 +738,21 @@ function App() {
     if (!menuData) return <h2>No Menu Data</h2>;
     const mealPeriodData = menuData[activePage];
     const mealPeriodName = capitalizeWords(activePage);
-    if (!mealPeriodData || mealPeriodData.length === 0) return <><h2 className="meal-period-title">{mealPeriodName}</h2><p>No items listed for this meal.</p></>;
+    const todaysHours = getMealHoursForToday(activePage);
+
+    if (!mealPeriodData || mealPeriodData.length === 0) {
+        return (
+            <>
+              <h2 className="meal-period-title">{mealPeriodName}</h2>
+              {showMealHours && <p className="meal-period-hours">{todaysHours}</p>}
+              <p>No items listed for this meal.</p>
+            </>
+        );
+    }
     return (
       <div className="menu-content">
         <h2 className="meal-period-title">{mealPeriodName}</h2>
+        {showMealHours && <p className="meal-period-hours">{todaysHours}</p>}
         {mealPeriodData.map((station, index) => {
           const stationId = station.name.replace(/\s+/g, '-');
           return (
@@ -787,6 +826,7 @@ function App() {
                     onBack={toggleSettingsPage} 
                     isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(!isChapelVisible)} 
                     isCreditsVisible={isCreditsVisible} onToggleCreditsVisible={() => setIsCreditsVisible(!isCreditsVisible)}
+                    showMealHours={showMealHours} onToggleShowMealHours={() => setShowMealHours(!showMealHours)}
                     isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)} 
                     isSarcasticAi={isSarcasticAi} onToggleSarcasticAi={() => setIsSarcasticAi(!isSarcasticAi)} 
                     silkAngle1={silkAngle1} setSilkAngle1={setSilkAngle1} 

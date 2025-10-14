@@ -445,6 +445,16 @@ body, html, #root {
   margin-bottom: 1.5rem;
 }
 
+/* --- NEW: Style for Meal Period Hours --- */
+.meal-period-hours {
+  text-align: center;
+  margin-top: -1rem; /* Pulls it closer to the title */
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  font-weight: 400;
+}
+
 .station {
   margin-bottom: 1.5rem;
 }
