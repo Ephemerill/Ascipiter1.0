@@ -263,4 +263,4 @@ if __name__ == '__main__':
         update_weekly_menu_cache_job()
 
     logging.info("Starting Flask server and background scheduler.")
-    app.run(debug=True, port=5001)
+    app.run(debug=False, host='0.0.0.0', port=5001)
