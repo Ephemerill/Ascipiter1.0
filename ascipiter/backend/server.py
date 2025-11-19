@@ -247,6 +247,44 @@ def chapel_endpoint():
         return jsonify([])
     return jsonify(cached_info.get('data', []))
 
+# --- ANALYTICS ENDPOINTS ---
+ANALYTICS_DB = 'analytics.db'
+
+def get_analytics_db_connection():
+    conn = sqlite3.connect(ANALYTICS_DB)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+@app.route('/api/record-load', methods=['POST'])
+def record_load():
+    today = datetime.date.today().isoformat()
+    conn = get_analytics_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            INSERT INTO page_loads (date, count) VALUES (?, 1)
+            ON CONFLICT(date) DO UPDATE SET count = count + 1
+        ''', (today,))
+        conn.commit()
+    except sqlite3.Error as e:
+        logging.error(f"Database error recording load: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+    return jsonify({"success": True}), 201
+
+@app.route('/api/get-loads', methods=['GET'])
+def get_loads():
+    conn = get_analytics_db_connection()
+    try:
+        loads = conn.execute('SELECT * FROM page_loads ORDER BY date DESC').fetchall()
+        return jsonify([dict(row) for row in loads])
+    except sqlite3.Error as e:
+        logging.error(f"Database error getting loads: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
 
 # --- MAIN EXECUTION ---
 if __name__ == '__main__':
