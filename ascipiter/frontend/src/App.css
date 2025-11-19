@@ -1,7 +1,9 @@
 /* App.css */
 
 /* 1. FONT AND PAGE RESET */
-body, html, #root {
+body,
+html,
+#root {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -95,11 +97,9 @@ body, html, #root {
 }
 
 .glass-surface--fallback {
-  background: linear-gradient(
-    to bottom right,
-    rgba(255, 255, 255, 0.15),
-    rgba(255, 255, 255, 0.05)
-  );
+  background: linear-gradient(to bottom right,
+      rgba(255, 255, 255, 0.15),
+      rgba(255, 255, 255, 0.05));
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
@@ -108,7 +108,8 @@ body, html, #root {
   color: white;
   text-align: left;
   box-sizing: border-box;
-  padding: 2rem 2rem 10rem 2rem; /* Increased padding-bottom */
+  padding: 2rem 2rem 10rem 2rem;
+  /* Increased padding-bottom */
   width: 100%;
 }
 
@@ -357,9 +358,11 @@ body, html, #root {
   cursor: pointer;
   padding: 2px 0;
 }
+
 .toggle-switch-container label {
   cursor: pointer;
 }
+
 .toggle-switch {
   position: relative;
   width: 44px;
@@ -368,9 +371,11 @@ body, html, #root {
   border-radius: 12px;
   transition: background-color 0.3s ease;
 }
+
 .toggle-switch.on {
   background-color: #fff;
 }
+
 .toggle-handle {
   position: absolute;
   top: 2px;
@@ -379,13 +384,15 @@ body, html, #root {
   height: 20px;
   background-color: #fff;
   border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: transform 0.3s ease;
 }
+
 .toggle-switch.on .toggle-handle {
   transform: translateX(20px);
   background-color: #333;
 }
+
 .toggle-checkbox {
   display: none;
 }
@@ -397,14 +404,17 @@ body, html, #root {
   left: 1.5rem;
   right: 1.5rem;
   display: flex;
-  flex-direction: column-reverse; /* Puts nav bar on bottom */
+  flex-direction: column-reverse;
+  /* Puts nav bar on bottom */
   align-items: center;
-  gap: 0.75rem; /* Space between day picker and nav bar */
+  gap: 0.75rem;
+  /* Space between day picker and nav bar */
 }
 
 /* --- MODIFIED: inner-nav-bar styles --- */
 .inner-nav-bar {
-  width: 100%; /* Fill the new parent container */
+  width: 100%;
+  /* Fill the new parent container */
   height: 50px;
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -442,7 +452,8 @@ body, html, #root {
 
 .meal-period-title {
   text-align: center;
-  margin-bottom: 1.5rem; /* Give space for content */
+  margin-bottom: 1.5rem;
+  /* Give space for content */
 }
 
 .meal-period-hours {
@@ -583,14 +594,14 @@ body, html, #root {
   padding: 1rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem; 
+  gap: 0.75rem;
 }
 
 .chapel-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 0; 
+  margin-bottom: 0;
   gap: 0.5rem;
 }
 
@@ -606,7 +617,7 @@ body, html, #root {
   font-size: 0.8rem;
   font-weight: 500;
   opacity: 0.8;
-  background-color: rgba(0,0,0,0.2);
+  background-color: rgba(0, 0, 0, 0.2);
   padding: 0.15rem 0.5rem;
   border-radius: 0.5rem;
   white-space: nowrap;
@@ -628,15 +639,17 @@ body, html, #root {
 .chapel-description {
   font-size: 0.9rem;
   opacity: 0.9;
-  margin: 0; 
+  margin: 0;
 }
 
 .chapel-events-list::-webkit-scrollbar {
   width: 8px;
 }
+
 .chapel-events-list::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .chapel-events-list::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.3);
   border-radius: 4px;
@@ -785,244 +798,165 @@ body, html, #root {
 .settings-content .toggle-switch-container:first-of-type {
   margin-top: 1rem;
 }
+
 .settings-content .toggle-switch-container {
   padding: 8px 0;
 }
 
 .appearance-settings {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .appearance-settings h3 {
-    width: 100%;
-    text-align: left;
+  width: 100%;
+  text-align: left;
 }
 
 .appearance-settings p {
-    text-align: center;
+  text-align: center;
 }
 
 .advanced-color-picker {
-    margin-top: 1rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 24px;
-    width: 100%;
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
 }
 
 .preset-swatches-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    padding-bottom: 24px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .color-swatch {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-    padding: 0;
-    flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  padding: 0;
+  flex-shrink: 0;
 }
 
-.color-swatch:hover { transform: scale(1.1); }
+.color-swatch:hover {
+  transform: scale(1.1);
+}
 
 .default-color-button {
-    height: 36px;
-    padding: 0 16px;
-    background-color: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    border-radius: 18px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
+  height: 36px;
+  padding: 0 16px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 18px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .default-color-button:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    transform: scale(1.05);
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
 }
 
 .arc-picker-wrapper {
-    position: relative;
-    width: 200px;
-    height: 200px;
+  position: relative;
+  width: 200px;
+  height: 200px;
 }
 
 .picker-area {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.1);
-    background-image: radial-gradient(rgba(255,255,255,0.2) 1px, transparent 0);
-    background-size: 10px 10px;
-    cursor: pointer;
-    border: 1px solid rgba(255,255,255,0.1);
+  width: 100%;
+  height: 100%;
+  position: relative;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 0);
+  background-size: 10px 10px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .arc-picker-wrapper::before {
-    content: '';
-    position: absolute;
-    inset: -3px;
-    border-radius: 50%;
-    padding: 2px;
-    background: conic-gradient(from 90deg at 50% 50%, hsl(0, 80%, 70%), hsl(30, 80%, 70%), hsl(60, 80%, 70%), hsl(90, 80%, 70%), hsl(120, 80%, 70%), hsl(150, 80%, 70%), hsl(180, 80%, 70%), hsl(210, 80%, 70%), hsl(240, 80%, 70%), hsl(270, 80%, 70%), hsl(300, 80%, 70%), hsl(330, 80%, 70%), hsl(360, 80%, 70%));
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  padding: 2px;
+  background: conic-gradient(from 90deg at 50% 50%, hsl(0, 80%, 70%), hsl(30, 80%, 70%), hsl(60, 80%, 70%), hsl(90, 80%, 70%), hsl(120, 80%, 70%), hsl(150, 80%, 70%), hsl(180, 80%, 70%), hsl(210, 80%, 70%), hsl(240, 80%, 70%), hsl(270, 80%, 70%), hsl(300, 80%, 70%), hsl(330, 80%, 70%), hsl(360, 80%, 70%));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 
 
 .picker-handle {
-    position: absolute;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    border: 3px solid white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    transform: translate(-50%, -50%);
-    cursor: grab;
-    z-index: 10;
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  z-index: 10;
 }
 
 .picker-handle:active {
-    cursor: grabbing;
-    transform: translate(-50%, -50%) scale(1.1);
+  cursor: grabbing;
+  transform: translate(-50%, -50%) scale(1.1);
 }
 
 .sliders-wrapper {
-    width: 100%;
-    padding-top: 24px;
-    margin-top: 24px;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+  width: 100%;
+  padding-top: 24px;
+  margin-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .slider-control {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    align-items: center;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
 }
 
 .slider-control label {
-    font-size: 1rem;
-    opacity: 0.8;
-    line-height: 1.6;
+  font-size: 1rem;
+  opacity: 0.8;
+  line-height: 1.6;
 }
 
-.slider-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  max-width: 250px;
-}
-
-.slider-wrapper {
-  display: flex;
-  width: 100%;
-  touch-action: none;
-  user-select: none;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.slider-root {
-  position: relative;
-  display: flex;
-  width: 100%;
-  flex-grow: 1;
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-  align-items: center;
-  padding: 1rem 0;
-}
-
-.slider-root:active {
-  cursor: grabbing;
-}
-
-.slider-track-wrapper {
-  display: flex;
-  flex-grow: 1;
-}
-
-.slider-track {
-  position: relative;
-  height: 100%;
-  flex-grow: 1;
-  overflow: hidden;
-  border-radius: 9999px;
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.slider-range {
-  position: absolute;
-  height: 100%;
-  background-color: #fff;
-  border-radius: 9999px;
-}
-
-.value-indicator {
-    position: relative;
-    text-align: center;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    font-size: 1rem;
-    opacity: 0.8;
-    line-height: 1.6;
-    color: white;
-}
-
-.text-type {
-  display: inline-block;
-  white-space: pre-wrap;
-}
-
-.text-type__cursor {
-  margin-left: 0.25rem;
-  display: inline-block;
-  opacity: 1;
-}
-
-.text-type__cursor--hidden {
-  display: none;
-}
 
 @media (max-width: 768px) {
   .card-container {
     flex-direction: column;
     align-items: center;
   }
+
   .meal-card,
   .chapel-card {
     width: 100% !important;
     flex: none !important;
   }
-  
+
   .card-nav-container {
     width: 90%;
     margin-top: 1.2em;
@@ -1079,7 +1013,7 @@ body, html, #root {
   .settings-nav {
     flex-direction: column;
     flex-basis: auto;
-    overflow-x: hidden; 
+    overflow-x: hidden;
     padding-bottom: 0;
     margin: 0;
   }
@@ -1087,7 +1021,7 @@ body, html, #root {
   .settings-nav-item {
     width: 100%;
   }
-  
+
   .settings-nav-item:first-child,
   .settings-nav-item:last-child {
     margin: 0;
@@ -1116,7 +1050,9 @@ body, html, #root {
 }
 
 @keyframes fadeIn {
-  to { opacity: 1; }
+  to {
+    opacity: 1;
+  }
 }
 
 .feedback-modal-container {
@@ -1128,7 +1064,7 @@ body, html, #root {
 }
 
 @keyframes zoomIn {
-  to { 
+  to {
     transform: scale(1);
     opacity: 1;
   }
@@ -1207,8 +1143,8 @@ body, html, #root {
 }
 
 .feedback-actions button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .feedback-actions button[type="submit"] {
@@ -1252,8 +1188,10 @@ body, html, #root {
 /* Main container for the rating bar/stars */
 .rating-bar-container {
   position: relative;
-  width: 70px; /* Thinner */
-  height: 14px; /* Shorter */
+  width: 70px;
+  /* Thinner */
+  height: 14px;
+  /* Shorter */
   cursor: pointer;
 }
 
@@ -1261,17 +1199,21 @@ body, html, #root {
 .rating-bar-background {
   position: absolute;
   inset: 0;
-  border: 1px solid rgba(255, 255, 255, 0.3); /* Always visible border */
-  border-radius: 7px; /* Adjusted border-radius for thinner bar */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  /* Always visible border */
+  border-radius: 7px;
+  /* Adjusted border-radius for thinner bar */
   overflow: hidden;
   transition: opacity 0.2s, transform 0.2s, filter 0.2s;
-  background-color: transparent; /* Ensures it's just an outline */
+  background-color: transparent;
+  /* Ensures it's just an outline */
 }
 
 /* The colorful fill of the bar */
 .rating-bar-fill {
   height: 100%;
-  border-radius: 7px; /* Adjusted border-radius for thinner bar */
+  border-radius: 7px;
+  /* Adjusted border-radius for thinner bar */
   transition: width 0.4s ease-in-out;
 }
 
@@ -1286,7 +1228,8 @@ body, html, #root {
   opacity: 0;
   transform: scale(0.9);
   filter: blur(5px);
-  font-size: 0.9rem; /* Sized to fit the new container */
+  font-size: 0.9rem;
+  /* Sized to fit the new container */
   transition: opacity 0.2s, transform 0.2s, filter 0.2s;
 }
 
@@ -1319,7 +1262,8 @@ body, html, #root {
 }
 
 .modal-stars-wrapper {
-  font-size: 2.5rem; /* Large, easy-to-tap stars */
+  font-size: 2.5rem;
+  /* Large, easy-to-tap stars */
   display: flex;
   gap: 0.5rem;
 }
@@ -1354,14 +1298,17 @@ body, html, #root {
 .day-picker-toggle .chevron-icon {
   transition: transform 0.3s ease-in-out;
 }
+
 .day-picker-toggle .chevron-icon.open {
   transform: rotate(180deg);
 }
 
 .day-options-container {
   position: absolute;
-  bottom: 100%; /* Opens upwards */
-  margin-bottom: 8px; /* Space between toggle and menu */
+  bottom: 100%;
+  /* Opens upwards */
+  margin-bottom: 8px;
+  /* Space between toggle and menu */
   background-color: rgba(45, 45, 45, 0.7);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
@@ -1375,7 +1322,7 @@ body, html, #root {
   z-index: 10;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
 .day-options-container.open {
@@ -1404,8 +1351,121 @@ body, html, #root {
   background-color: rgba(255, 255, 255, 0.1);
   color: white;
 }
+
 .day-option-button.active {
   background-color: rgba(255, 255, 255, 0.15);
   color: white;
   font-weight: 600;
+}
+
+/* --- Color Control Group Styles --- */
+.color-control-group {
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: background-color 0.2s;
+}
+
+.color-control-group:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.color-control-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.color-preview-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  margin-right: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.color-label {
+  flex-grow: 1;
+  font-size: 1rem;
+  font-weight: 500;
+  opacity: 0.9;
+  text-align: center;
+}
+
+.expand-icon {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  transition: transform 0.3s ease;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.color-control-content {
+  padding: 0 16px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Ensure slider controls inside the group look good */
+.color-control-content .slider-control {
+  margin-top: 8px;
+}
+
+/* Elastic Slider Styles */
+.slider-container {
+  width: 100%;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.slider-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  position: relative;
+}
+
+.slider-root {
+  flex-grow: 1;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin: 0 10px;
+}
+
+.slider-track-wrapper {
+  width: 100%;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.slider-track {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.slider-range {
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 3px;
 }

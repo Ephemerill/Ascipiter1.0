@@ -1,5 +1,5 @@
 import { animate, motion, useMotionValue, useMotionValueEvent, useTransform } from 'framer-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
 import './../App.css';
 
 const MAX_OVERFLOW = 50;
@@ -40,9 +40,36 @@ function Slider({ value, onChange, startingValue, maxValue, isStepped, stepSize,
   const overflow = useMotionValue(0);
   const scale = useMotionValue(1);
 
+  const widthMV = useMotionValue(0);
+  const leftMV = useMotionValue(0);
+
+  useLayoutEffect(() => {
+    if (!sliderRef.current || typeof ResizeObserver === 'undefined') return;
+
+    const updateMeasurements = () => {
+      if (sliderRef.current) {
+        const rect = sliderRef.current.getBoundingClientRect();
+        if (rect.width > 0) {
+          widthMV.set(rect.width);
+          leftMV.set(rect.left);
+        }
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(updateMeasurements);
+    resizeObserver.observe(sliderRef.current);
+
+    // Initial measurement
+    updateMeasurements();
+
+    return () => resizeObserver.disconnect();
+  }, [widthMV, leftMV]);
+
   useMotionValueEvent(clientX, 'change', latest => {
     if (sliderRef.current) {
-      const { left, right } = sliderRef.current.getBoundingClientRect();
+      const { left, right, width } = sliderRef.current.getBoundingClientRect();
+      if (width === 0) return;
+
       let newValue;
 
       if (latest < left) {
@@ -63,6 +90,8 @@ function Slider({ value, onChange, startingValue, maxValue, isStepped, stepSize,
   const handlePointerMove = e => {
     if (e.buttons > 0 && sliderRef.current) {
       const { left, width } = sliderRef.current.getBoundingClientRect();
+      if (width === 0) return;
+
       let newValue = startingValue + ((e.clientX - left) / width) * (maxValue - startingValue);
 
       if (isStepped) {
@@ -127,17 +156,15 @@ function Slider({ value, onChange, startingValue, maxValue, isStepped, stepSize,
           <motion.div
             style={{
               scaleX: useTransform(() => {
-                if (sliderRef.current) {
-                  const { width } = sliderRef.current.getBoundingClientRect();
-                  return 1 + overflow.get() / width;
-                }
+                const w = widthMV.get();
+                if (w === 0) return 1; // Avoid NaN
+                return 1 + overflow.get() / w;
               }),
               scaleY: useTransform(overflow, [0, MAX_OVERFLOW], [1, 0.8]),
               transformOrigin: useTransform(() => {
-                if (sliderRef.current) {
-                  const { left, width } = sliderRef.current.getBoundingClientRect();
-                  return clientX.get() < left + width / 2 ? 'right' : 'left';
-                }
+                const w = widthMV.get();
+                const l = leftMV.get();
+                return clientX.get() < l + w / 2 ? 'right' : 'left';
               }),
               height: useTransform(scale, [1, 1.2], [6, 12]),
               marginTop: useTransform(scale, [1, 1.2], [0, -3]),

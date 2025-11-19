@@ -13,7 +13,6 @@ import FeedbackModal from './components/Feedback.jsx';
 import { getAnonymousId } from './utils/anonymousId';
 
 // --- Console Log Catcher ---
-// This code captures console messages so they can be sent with feedback.
 let consoleLogs = [];
 const originalLog = console.log;
 const originalError = console.error;
@@ -175,8 +174,195 @@ const parseChapelDate = (timeString) => {
 };
 
 
-// --- Arc Style Color Picker ---
-const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation, setSaturation, lightness, setLightness }) => {
+// --- Icons with Unique IDs ---
+const LowSatIcon = ({ idSuffix = "" }) => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill={`url(#paint0_linear_lowsat_${idSuffix})`} /><defs><linearGradient id={`paint0_linear_lowsat_${idSuffix}`} x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop stopColor="#E0E0E0" /><stop offset="1" stopColor="#BDBDBD" /></linearGradient></defs></svg>);
+const HighSatIcon = ({ idSuffix = "" }) => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill={`url(#paint0_radial_highsat_${idSuffix})`} /><defs><radialGradient id={`paint0_radial_highsat_${idSuffix}`} cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(12 12) rotate(90) scale(10)"><stop stopColor="#FF8A8A" /><stop offset="0.5" stopColor="#82B1FF" /><stop offset="1" stopColor="#B9F6CA" /></radialGradient></defs></svg>);
+const DarkIcon = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#424242" /></svg>);
+const LightIcon = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#E0E0E0" /></svg>);
+
+// --- Unified Control Component ---
+const UnifiedColorControl = ({
+  saturation1, setSaturation1,
+  lightness1, setLightness1,
+  saturation2, setSaturation2,
+  lightness2, setLightness2,
+  color1, color2,
+  triggerResize
+}) => {
+  const [expanded, setExpanded] = useState(false);
+  const [layoutKey, setLayoutKey] = useState(0);
+  const masterRef = useRef(null);
+  const individualRef = useRef(null);
+  const containerRef = useRef(null);
+  const contentWrapperRef = useRef(null);
+  const isInitial = useRef(true);
+
+  // Icons
+  const SatL_M = <LowSatIcon idSuffix="m" />;
+  const SatR_M = <HighSatIcon idSuffix="m" />;
+  const SatL_1 = <LowSatIcon idSuffix="1" />;
+  const SatR_1 = <HighSatIcon idSuffix="1" />;
+  const SatL_2 = <LowSatIcon idSuffix="2" />;
+  const SatR_2 = <HighSatIcon idSuffix="2" />;
+  const LitL = <DarkIcon />;
+  const LitR = <LightIcon />;
+
+  // Master handlers
+  const handleMasterSat = (v) => {
+    if (setSaturation1) setSaturation1(v);
+    if (setSaturation2) setSaturation2(v);
+  };
+  const handleMasterLit = (v) => {
+    if (setLightness1) setLightness1(v);
+    if (setLightness2) setLightness2(v);
+  };
+
+  useLayoutEffect(() => {
+    if (isInitial.current) {
+      if (expanded) {
+        gsap.set(masterRef.current, { display: 'none', opacity: 0 });
+        gsap.set(individualRef.current, { display: 'flex', opacity: 1 });
+      } else {
+        gsap.set(masterRef.current, { display: 'block', opacity: 1 });
+        gsap.set(individualRef.current, { display: 'none', opacity: 0 });
+      }
+      isInitial.current = false;
+      return;
+    }
+
+    const container = contentWrapperRef.current;
+    const master = masterRef.current;
+    const detailed = individualRef.current;
+
+    if (!container || !master || !detailed) return;
+
+    const startHeight = container.offsetHeight;
+    gsap.set(container, { height: startHeight });
+
+    const tl = gsap.timeline({
+      onStart: () => triggerResize && triggerResize(),
+      onComplete: () => {
+        gsap.set(container, { height: 'auto' });
+        triggerResize && triggerResize();
+        setLayoutKey(k => k + 1); // Force re-render for slider width calc
+      }
+    });
+
+    if (expanded) {
+      tl.to(master, { opacity: 0, duration: 0.2, ease: 'power2.in' })
+        .set(master, { display: 'none' })
+        .set(detailed, { display: 'flex', opacity: 0 })
+        .call(() => {
+          const targetHeight = detailed.scrollHeight;
+          gsap.to(container, { height: targetHeight, duration: 0.3, ease: 'power2.out' });
+        })
+        .to(detailed, { opacity: 1, duration: 0.3, ease: 'power2.out' }, "+=0.05");
+    } else {
+      tl.to(detailed, { opacity: 0, duration: 0.2, ease: 'power2.in' })
+        .set(detailed, { display: 'none' })
+        .set(master, { display: 'block', opacity: 0 })
+        .call(() => {
+          const targetHeight = master.scrollHeight;
+          gsap.to(container, { height: targetHeight, duration: 0.3, ease: 'power2.out' });
+        })
+        .to(master, { opacity: 1, duration: 0.3, ease: 'power2.out' }, "+=0.05");
+    }
+  }, [expanded, triggerResize]);
+
+  return (
+    <div className="color-control-group" ref={containerRef} style={{ marginTop: '20px', overflow: 'hidden' }}>
+      <div className="color-control-header" onClick={() => setExpanded(!expanded)}>
+        <span className="color-label">Appearance Tuning</span>
+        <span className={`expand-icon ${expanded ? 'expanded' : ''}`}>▼</span>
+      </div>
+
+      <div ref={contentWrapperRef} style={{ position: 'relative', overflow: 'hidden' }}>
+
+        {/* COLLAPSED */}
+        <div ref={masterRef} style={{ padding: '0 45px 24px 45px' }}>
+          <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <label style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '4px', textAlign: 'center' }}>Saturation</label>
+            <div style={{ width: '100%' }}>
+              <ElasticSlider value={saturation1} onChange={handleMasterSat} maxValue={100} leftIcon={SatL_M} rightIcon={SatR_M} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <label style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '4px', textAlign: 'center' }}>Lightness</label>
+            <div style={{ width: '100%' }}>
+              <ElasticSlider value={lightness1} onChange={handleMasterLit} maxValue={100} leftIcon={LitL} rightIcon={LitR} />
+            </div>
+          </div>
+        </div>
+
+        {/* EXPANDED */}
+        <div ref={individualRef} style={{ flexDirection: 'column', gap: '24px', padding: '24px 0', opacity: 0, display: 'none' }}>
+
+          {/* Color 2 Group (Top/First) */}
+          {/* Symmetrical padding (45px left, 45px right) centers the content. Absolute dot sits in the left padding. */}
+          <div style={{ position: 'relative', padding: '0 45px', width: '100%', boxSizing: 'border-box' }}>
+            <div style={{
+              position: 'absolute', left: '12px', top: '-10px',
+              width: '32px', height: '32px',
+              borderRadius: '50%', backgroundColor: color2,
+              border: '1px solid rgba(255,255,255,0.3)'
+            }}></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <label style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '4px', textAlign: 'center' }}>Saturation</label>
+                <div style={{ width: '100%' }}>
+                  <ElasticSlider key={`sat2-${layoutKey}`} value={saturation2} onChange={setSaturation2} maxValue={100} leftIcon={SatL_2} rightIcon={SatR_2} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <label style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '4px', textAlign: 'center' }}>Lightness</label>
+                <div style={{ width: '100%' }}>
+                  <ElasticSlider key={`lit2-${layoutKey}`} value={lightness2} onChange={setLightness2} maxValue={100} leftIcon={LitL} rightIcon={LitR} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ width: '100%', height: '1px', backgroundColor: 'rgba(255,255,255,0.1)' }}></div>
+
+          {/* Color 1 Group (Bottom/Second) */}
+          <div style={{ position: 'relative', padding: '0 45px', width: '100%', boxSizing: 'border-box' }}>
+            <div style={{
+              position: 'absolute', left: '12px', top: '-10px',
+              width: '32px', height: '32px',
+              borderRadius: '50%', backgroundColor: color1,
+              border: '1px solid rgba(255,255,255,0.3)'
+            }}></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <label style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '4px', textAlign: 'center' }}>Saturation</label>
+                <div style={{ width: '100%' }}>
+                  <ElasticSlider key={`sat1-${layoutKey}`} value={saturation1} onChange={setSaturation1} maxValue={100} leftIcon={SatL_1} rightIcon={SatR_1} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <label style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '4px', textAlign: 'center' }}>Lightness</label>
+                <div style={{ width: '100%' }}>
+                  <ElasticSlider key={`lit1-${layoutKey}`} value={lightness1} onChange={setLightness1} maxValue={100} leftIcon={LitL} rightIcon={LitR} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AdvancedColorPicker = ({
+  angle1, setAngle1,
+  angle2, setAngle2,
+  saturation1, setSaturation1,
+  lightness1, setLightness1,
+  saturation2, setSaturation2,
+  lightness2, setLightness2,
+  triggerResize
+}) => {
   const pickerRef = useRef(null);
   const [dragging, setDragging] = useState(null);
 
@@ -195,7 +381,7 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation,
     return (angle + 360) % 360;
   };
 
-  const angleToHsl = (angle) => `hsl(${angle}, ${saturation}%, ${lightness}%)`;
+  const angleToHsl = (angle, sat, light) => `hsl(${angle}, ${sat}%, ${light}%)`;
 
   const handleInteraction = (e, handleId) => {
     const picker = pickerRef.current;
@@ -284,21 +470,18 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation,
   const handlePresetSelect = (preset) => {
     setAngle1(hexToHslAngle(preset.c1));
     setAngle2(hexToHslAngle(preset.c2));
-    setSaturation(80);
-    setLightness(70);
+    setSaturation1(80); setLightness1(70);
+    if (setSaturation2) setSaturation2(80);
+    if (setLightness2) setLightness2(70);
   };
 
   const handleDefault = () => {
     setAngle1(258); // Dark Purple
     setAngle2(238); // Light Purple
-    setSaturation(5);
-    setLightness(70);
+    setSaturation1(5); setLightness1(70);
+    if (setSaturation2) setSaturation2(5);
+    if (setLightness2) setLightness2(70);
   };
-
-  const LowSatIcon = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="url(#paint0_linear_1_2)" /><defs><linearGradient id="paint0_linear_1_2" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop stopColor="#E0E0E0" /><stop offset="1" stopColor="#BDBDBD" /></linearGradient></defs></svg>);
-  const HighSatIcon = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="url(#paint0_radial_1_3)" /><defs><radialGradient id="paint0_radial_1_3" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(12 12) rotate(90) scale(10)"><stop stopColor="#FF8A8A" /><stop offset="0.5" stopColor="#82B1FF" /><stop offset="1" stopColor="#B9F6CA" /></radialGradient></defs></svg>);
-  const DarkIcon = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#424242" /></svg>);
-  const LightIcon = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#E0E0E0" /></svg>);
 
   return (
     <div className="advanced-color-picker">
@@ -310,26 +493,45 @@ const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation,
       </div>
       <div className="arc-picker-wrapper">
         <div ref={pickerRef} className="picker-area" onClick={(e) => handleInteraction(e, null)}>
-          <div className="picker-handle" style={{ left: `${handle1Pos.x}%`, top: `${handle1Pos.y}%`, backgroundColor: angleToHsl(angle1) }} onMouseDown={(e) => handleStart(e, 'handle1')} onTouchStart={(e) => handleStart(e, 'handle1')} />
-          <div className="picker-handle" style={{ left: `${handle2Pos.x}%`, top: `${handle2Pos.y}%`, backgroundColor: angleToHsl(angle2) }} onMouseDown={(e) => handleStart(e, 'handle2')} onTouchStart={(e) => handleStart(e, 'handle2')} />
+          <div className="picker-handle" style={{ left: `${handle1Pos.x}%`, top: `${handle1Pos.y}%`, backgroundColor: angleToHsl(angle1, saturation1, lightness1) }} onMouseDown={(e) => handleStart(e, 'handle1')} onTouchStart={(e) => handleStart(e, 'handle1')} />
+          <div className="picker-handle" style={{ left: `${handle2Pos.x}%`, top: `${handle2Pos.y}%`, backgroundColor: angleToHsl(angle2, saturation2, lightness2) }} onMouseDown={(e) => handleStart(e, 'handle2')} onTouchStart={(e) => handleStart(e, 'handle2')} />
         </div>
       </div>
       <div className="sliders-wrapper">
-        <div className="slider-control">
-          <label>Saturation</label>
-          <ElasticSlider value={saturation} onChange={setSaturation} maxValue={100} leftIcon={<LowSatIcon />} rightIcon={<HighSatIcon />} />
-        </div>
-        <div className="slider-control">
-          <label>Lightness</label>
-          <ElasticSlider value={lightness} onChange={setLightness} maxValue={100} leftIcon={<DarkIcon />} rightIcon={<LightIcon />} />
-        </div>
+        <UnifiedColorControl
+          saturation1={saturation1} setSaturation1={setSaturation1}
+          lightness1={lightness1} setLightness1={setLightness1}
+          saturation2={saturation2} setSaturation2={setSaturation2}
+          lightness2={lightness2} setLightness2={setLightness2}
+          color1={angleToHsl(angle1, saturation1, lightness1)}
+          color2={angleToHsl(angle2, saturation2, lightness2)}
+          triggerResize={triggerResize}
+        />
       </div>
     </div>
   );
 };
 
 // --- Settings Page Component ---
-const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isCreditsVisible, onToggleCreditsVisible, showMealHours, onToggleShowMealHours, isRatingVisible, onToggleRatingVisible, showRatingCount, onToggleShowRatingCount, isDayPickerVisible, onToggleDayPicker, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi, silkAngle1, setSilkAngle1, silkAngle2, setSilkAngle2, silkSaturation, setSilkSaturation, silkLightness, setSilkLightness, triggerCardResize }, ref) => {
+const SettingsPage = React.forwardRef(({
+  onBack,
+  isChapelVisible, onToggleChapel,
+  isCreditsVisible, onToggleCreditsVisible,
+  showMealHours, onToggleShowMealHours,
+  isRatingVisible, onToggleRatingVisible,
+  showRatingCount, onToggleShowRatingCount,
+  isDayPickerVisible, onToggleDayPicker,
+  isAiVisible, onToggleAi,
+  isSarcasticAi, onToggleSarcasticAi,
+  silkAngle1, setSilkAngle1,
+  silkAngle2, setSilkAngle2,
+  silkSaturation1, setSilkSaturation1,
+  silkLightness1, setSilkLightness1,
+  silkSaturation2, setSilkSaturation2,
+  silkLightness2, setSilkLightness2,
+  isHighContrast, onToggleHighContrast,
+  triggerCardResize
+}, ref) => {
   const [activeTab, setActiveTab] = useState('General');
   const [loadData, setLoadData] = useState(null);
   const settingsPages = ['General', 'AI Settings', 'Appearance', 'About'];
@@ -386,9 +588,15 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
             <AdvancedColorPicker
               angle1={silkAngle1} setAngle1={setSilkAngle1}
               angle2={silkAngle2} setAngle2={setSilkAngle2}
-              saturation={silkSaturation} setSaturation={setSilkSaturation}
-              lightness={silkLightness} setLightness={setSilkLightness}
+              saturation1={silkSaturation1} setSaturation1={setSilkSaturation1}
+              lightness1={silkLightness1} setLightness1={setSilkLightness1}
+              saturation2={silkSaturation2} setSaturation2={setSilkSaturation2}
+              lightness2={silkLightness2} setLightness2={setSilkLightness2}
+              triggerResize={triggerCardResize}
             />
+            <div style={{ marginTop: '20px' }}>
+              <ToggleSwitch label="High Contrast Mode" isToggled={isHighContrast} onToggle={onToggleHighContrast} />
+            </div>
           </div>
         );
       case 'About':
@@ -457,8 +665,14 @@ function App() {
 
   const [silkAngle1, setSilkAngle1] = useState(() => parseFloat(getCookie('silkAngle1')) || 258);
   const [silkAngle2, setSilkAngle2] = useState(() => parseFloat(getCookie('silkAngle2')) || 238);
-  const [silkSaturation, setSilkSaturation] = useState(() => parseFloat(getCookie('silkSaturation')) || 5);
-  const [silkLightness, setSilkLightness] = useState(() => parseFloat(getCookie('silkLightness')) || 70);
+
+  // Split saturation and lightness for each color
+  const [silkSaturation1, setSilkSaturation1] = useState(() => parseFloat(getCookie('silkSaturation1')) || 5);
+  const [silkLightness1, setSilkLightness1] = useState(() => parseFloat(getCookie('silkLightness1')) || 70);
+  const [silkSaturation2, setSilkSaturation2] = useState(() => parseFloat(getCookie('silkSaturation2')) || 5);
+  const [silkLightness2, setSilkLightness2] = useState(() => parseFloat(getCookie('silkLightness2')) || 70);
+
+  const [isHighContrast, setIsHighContrast] = useState(() => getCookie('isHighContrast') === 'true');
 
   const [aiResponses, setAiResponses] = useState({});
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
@@ -497,11 +711,17 @@ function App() {
   useEffect(() => { setCookie('aiVisible', isAiVisible, 365); }, [isAiVisible]);
   useEffect(() => { setCookie('sarcasticAiVisible', isSarcasticAi, 365); }, [isSarcasticAi]);
   useEffect(() => { setCookie('dayPickerVisible', isDayPickerVisible, 365); }, [isDayPickerVisible]);
+
   useEffect(() => { setCookie('silkAngle1', silkAngle1, 365); }, [silkAngle1]);
   useEffect(() => { setCookie('silkAngle2', silkAngle2, 365); }, [silkAngle2]);
-  useEffect(() => { setCookie('silkSaturation', silkSaturation, 365); }, [silkSaturation]);
-  useEffect(() => { setCookie('silkSaturation', silkSaturation, 365); }, [silkSaturation]);
-  useEffect(() => { setCookie('silkLightness', silkLightness, 365); }, [silkLightness]);
+
+  useEffect(() => { setCookie('silkSaturation1', silkSaturation1, 365); }, [silkSaturation1]);
+  useEffect(() => { setCookie('silkLightness1', silkLightness1, 365); }, [silkLightness1]);
+  useEffect(() => { setCookie('silkSaturation2', silkSaturation2, 365); }, [silkSaturation2]);
+  useEffect(() => { setCookie('silkLightness2', silkLightness2, 365); }, [silkLightness2]);
+
+  useEffect(() => { setCookie('isHighContrast', isHighContrast, 365); }, [isHighContrast]);
+
   useEffect(() => { setCookie('showRatingCount', showRatingCount, 365); }, [showRatingCount]);
 
   const showToast = useCallback((message) => {
@@ -672,8 +892,15 @@ function App() {
   useLayoutEffect(() => { if (!isChapelLoading && isChapelVisible) { const timer = setTimeout(triggerChapelResize, 50); return () => clearTimeout(timer); } }, [isChapelLoading, isChapelVisible, chapelData, triggerChapelResize]);
   useEffect(() => { const timer = setTimeout(triggerCardResize, 150); return () => clearTimeout(timer); }, [aiResponses, triggerCardResize]);
 
-  const silkColor1 = useMemo(() => `hsl(${silkAngle1}, ${silkSaturation}%, ${silkLightness}%)`, [silkAngle1, silkSaturation, silkLightness]);
-  const silkColor2 = useMemo(() => `hsl(${silkAngle2}, ${silkSaturation}%, ${silkLightness}%)`, [silkAngle2, silkSaturation, silkLightness]);
+  const silkColor1 = useMemo(() => {
+    const l = isHighContrast ? 0 : silkLightness1;
+    return `hsl(${silkAngle1}, ${silkSaturation1}%, ${l}%)`;
+  }, [silkAngle1, silkSaturation1, silkLightness1, isHighContrast]);
+
+  const silkColor2 = useMemo(() => {
+    const l = isHighContrast ? 0 : silkLightness2;
+    return `hsl(${silkAngle2}, ${silkSaturation2}%, ${l}%)`;
+  }, [silkAngle2, silkSaturation2, silkLightness2, isHighContrast]);
 
   // Helper to transform weekly data to match daily data structure
   const transformWeeklyDayMenu = (dayMenu) => {
@@ -826,23 +1053,23 @@ function App() {
                 <SettingsPage
                   ref={settingsContentRef}
                   onBack={toggleSettingsPage}
-                  isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(!isChapelVisible)}
-                  isCreditsVisible={isCreditsVisible} onToggleCreditsVisible={() => setIsCreditsVisible(!isCreditsVisible)}
-                  showMealHours={showMealHours} onToggleShowMealHours={() => setShowMealHours(!showMealHours)}
-                  isRatingVisible={isRatingVisible}
-                  onToggleRatingVisible={() => setIsRatingVisible(v => !v)}
-                  showRatingCount={showRatingCount}
-                  onToggleShowRatingCount={() => setShowRatingCount(v => !v)}
-                  isDayPickerVisible={isDayPickerVisible}
-                  onToggleDayPicker={() => setIsDayPickerVisible(!isDayPickerVisible)}
-                  isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)}
-                  isSarcasticAi={isSarcasticAi} onToggleSarcasticAi={() => setIsSarcasticAi(!isSarcasticAi)}
+                  isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(v => !v)}
+                  isCreditsVisible={isCreditsVisible} onToggleCreditsVisible={() => setIsCreditsVisible(v => !v)}
+                  showMealHours={showMealHours} onToggleShowMealHours={() => setShowMealHours(v => !v)}
+                  isRatingVisible={isRatingVisible} onToggleRatingVisible={() => setIsRatingVisible(v => !v)}
+                  showRatingCount={showRatingCount} onToggleShowRatingCount={() => setShowRatingCount(v => !v)}
+                  isDayPickerVisible={isDayPickerVisible} onToggleDayPicker={() => setIsDayPickerVisible(v => !v)}
+                  isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(v => !v)}
+                  isSarcasticAi={isSarcasticAi} onToggleSarcasticAi={() => setIsSarcasticAi(v => !v)}
                   silkAngle1={silkAngle1} setSilkAngle1={setSilkAngle1}
                   silkAngle2={silkAngle2} setSilkAngle2={setSilkAngle2}
-                  silkSaturation={silkSaturation} setSilkSaturation={setSilkSaturation}
-                  silkLightness={silkLightness} setSilkLightness={setSilkLightness}
-                  triggerCardResize={triggerCardResize} />
-              ) : (<div ref={pageContentRef}>{renderCardContent()}</div>)}
+                  silkSaturation1={silkSaturation1} setSilkSaturation1={setSilkSaturation1}
+                  silkLightness1={silkLightness1} setSilkLightness1={setSilkLightness1}
+                  silkSaturation2={silkSaturation2} setSilkSaturation2={setSilkSaturation2}
+                  silkLightness2={silkLightness2} setSilkLightness2={setSilkLightness2}
+                  isHighContrast={isHighContrast} onToggleHighContrast={() => setIsHighContrast(v => !v)}
+                  triggerCardResize={triggerCardResize}
+                />) : (<div ref={pageContentRef}>{renderCardContent()}</div>)}
               {!isSettingsVisible && (
                 <div className="bottom-controls-container">
                   {isDayPickerVisible && (
