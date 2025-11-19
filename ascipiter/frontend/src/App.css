@@ -1479,7 +1479,11 @@ html,
   margin-bottom: 20px;
 }
 
-.background-type-dropdown {
+.background-dropdown-container {
+  position: relative;
+}
+
+.background-dropdown-toggle {
   width: 100%;
   padding: 10px 14px;
   background-color: rgba(255, 255, 255, 0.1);
@@ -1492,20 +1496,72 @@ html,
   transition: all 0.2s ease;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.background-type-dropdown:hover {
+.background-dropdown-toggle:hover {
   background-color: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-.background-type-dropdown:focus {
-  outline: none;
-  border-color: rgba(255, 255, 255, 0.5);
-  background-color: rgba(255, 255, 255, 0.15);
+.background-dropdown-toggle .chevron-icon {
+  font-size: 0.7rem;
+  transition: transform 0.3s ease;
 }
 
-.background-type-dropdown option {
-  background-color: #2a2a2a;
+.background-dropdown-toggle .chevron-icon.open {
+  transform: rotate(180deg);
+}
+
+.background-dropdown-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background-color: rgba(45, 45, 45, 0.85);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: max-height 0.3s ease-in-out, opacity 0.3s ease, visibility 0s 0.3s;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+
+.background-dropdown-options.open {
+  max-height: 120px;
+  opacity: 1;
+  visibility: visible;
+  transition: max-height 0.3s ease-in-out, opacity 0.3s ease, visibility 0s 0s;
+}
+
+.background-option {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 10px 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s, color 0.2s;
+  font-family: inherit;
+  font-size: 1rem;
+  width: 100%;
+}
+
+.background-option:hover {
+  background-color: rgba(255, 255, 255, 0.1);
   color: white;
+}
+
+.background-option.active {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-weight: 600;
 }

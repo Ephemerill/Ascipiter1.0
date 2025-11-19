@@ -488,7 +488,7 @@ const AdvancedColorPicker = ({
   const handle3Pos = angleToPos(angle3 || 0);
 
   const gradientPresets = useMemo(() => [
-    { name: 'Twilight', c1: '#756880ff', c2: '#ADD8E6', c3: '#FFB6C1' },
+    { name: 'Aurora', c1: '#5227FF', c2: '#7cff67', c3: '#5227FF' },
     { name: 'Sunrise', c1: '#ff7e5f', c2: '#feb47b', c3: '#FFD700' },
     { name: 'Ocean', c1: '#00c6ff', c2: '#0072ff', c3: '#00008B' },
     { name: 'Mango', c1: '#22c1c3', c2: '#fdbb2d', c3: '#FF4500' },
@@ -602,6 +602,7 @@ const SettingsPage = React.forwardRef(({
 }, ref) => {
   const [activeTab, setActiveTab] = useState('General');
   const [loadData, setLoadData] = useState(null);
+  const [isBackgroundDropdownOpen, setIsBackgroundDropdownOpen] = useState(false);
   const settingsPages = ['General', 'AI Settings', 'Appearance', 'About'];
   const contentRef = useRef(null);
 
@@ -631,12 +632,12 @@ const SettingsPage = React.forwardRef(({
           <div>
             <h3>General Settings</h3>
             <p>Configure general application settings here.</p>
-            <ToggleSwitch label={isDayPickerVisible ? "Hide Day Selector" : "Show Day Selector"} isToggled={isDayPickerVisible} onToggle={onToggleDayPicker} />
-            <ToggleSwitch label={isChapelVisible ? "Hide Chapel Schedule" : "Show Chapel Schedule"} isToggled={isChapelVisible} onToggle={onToggleChapel} />
-            <ToggleSwitch label={isCreditsVisible ? "Hide Credit Counter" : "Show Credit Counter"} isToggled={isCreditsVisible} onToggle={onToggleCreditsVisible} />
-            <ToggleSwitch label={showMealHours ? "Hide Meal Times" : "Show Meal Times"} isToggled={showMealHours} onToggle={onToggleShowMealHours} />
-            <ToggleSwitch label={isRatingVisible ? "Hide Rating System" : "Show Rating System"} isToggled={isRatingVisible} onToggle={onToggleRatingVisible} />
-            {isRatingVisible && <ToggleSwitch label={showRatingCount ? "Hide Rating Count" : "Show Rating Count"} isToggled={showRatingCount} onToggle={onToggleShowRatingCount} />}
+            <ToggleSwitch label={isDayPickerVisible ? "Show Day Selector" : "Show Day Selector"} isToggled={isDayPickerVisible} onToggle={onToggleDayPicker} />
+            <ToggleSwitch label={isChapelVisible ? "Show Chapel Schedule" : "Show Chapel Schedule"} isToggled={isChapelVisible} onToggle={onToggleChapel} />
+            <ToggleSwitch label={isCreditsVisible ? "Show Credit Counter" : "Show Credit Counter"} isToggled={isCreditsVisible} onToggle={onToggleCreditsVisible} />
+            <ToggleSwitch label={showMealHours ? "Show Meal Times" : "Show Meal Times"} isToggled={showMealHours} onToggle={onToggleShowMealHours} />
+            <ToggleSwitch label={isRatingVisible ? "Show Rating System" : "Show Rating System"} isToggled={isRatingVisible} onToggle={onToggleRatingVisible} />
+            {isRatingVisible && <ToggleSwitch label={showRatingCount ? "Show Rating Count" : "Show Rating Count"} isToggled={showRatingCount} onToggle={onToggleShowRatingCount} />}
           </div>
         );
       case 'AI Settings':
@@ -644,7 +645,7 @@ const SettingsPage = React.forwardRef(({
           <div>
             <h3>AI Settings</h3>
             <p>Control the AI features and personality.</p>
-            <ToggleSwitch label={isAiVisible ? "Hide AI Helper" : "Show AI Helper"} isToggled={isAiVisible} onToggle={onToggleAi} />
+            <ToggleSwitch label={isAiVisible ? "Show AI Helper" : "Show AI Helper"} isToggled={isAiVisible} onToggle={onToggleAi} />
             <ToggleSwitch label="Sarcastic AI" isToggled={isSarcasticAi} onToggle={onToggleSarcasticAi} />
           </div>
         );
@@ -655,16 +656,30 @@ const SettingsPage = React.forwardRef(({
             <p>Change the background by dragging the bubbles.</p>
 
             <div className="background-selector">
-              <label htmlFor="background-type-select" style={{ fontSize: '0.9rem', marginBottom: '8px', display: 'block', opacity: 0.8 }}>Background Style</label>
-              <select
-                id="background-type-select"
-                className="background-type-dropdown"
-                value={backgroundType}
-                onChange={(e) => setBackgroundType(e.target.value)}
-              >
-                <option value="silk">Silk</option>
-                <option value="aurora">Aurora</option>
-              </select>
+              <label style={{ fontSize: '0.9rem', marginBottom: '8px', display: 'block', opacity: 0.8 }}>Background Style</label>
+              <div className="background-dropdown-container">
+                <button
+                  className="background-dropdown-toggle"
+                  onClick={() => setIsBackgroundDropdownOpen(!isBackgroundDropdownOpen)}
+                >
+                  {backgroundType === 'silk' ? 'Silk' : 'Aurora'}
+                  <span className={`chevron-icon ${isBackgroundDropdownOpen ? 'open' : ''}`}>▼</span>
+                </button>
+                <div className={`background-dropdown-options ${isBackgroundDropdownOpen ? 'open' : ''}`}>
+                  <button
+                    className={`background-option ${backgroundType === 'silk' ? 'active' : ''}`}
+                    onClick={() => { setBackgroundType('silk'); setIsBackgroundDropdownOpen(false); }}
+                  >
+                    Silk
+                  </button>
+                  <button
+                    className={`background-option ${backgroundType === 'aurora' ? 'active' : ''}`}
+                    onClick={() => { setBackgroundType('aurora'); setIsBackgroundDropdownOpen(false); }}
+                  >
+                    Aurora
+                  </button>
+                </div>
+              </div>
             </div>
 
             <AdvancedColorPicker
