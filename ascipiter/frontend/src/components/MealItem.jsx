@@ -4,11 +4,11 @@ import MealRating from './MealRating';
 
 // Helper function to create a unique, URL-safe ID for a meal on a specific day
 const createMealId = (stationName, mealName) => {
-    const date = new Date();
-    const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    const cleanStation = (stationName || '').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
-    const cleanMeal = (mealName || '').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
-    return `${cleanStation.slice(0, 25)}-${cleanMeal.slice(0, 40)}-${dateString}`;
+  const date = new Date();
+  const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const cleanStation = (stationName || '').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+  const cleanMeal = (mealName || '').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+  return `${cleanStation.slice(0, 25)}-${cleanMeal.slice(0, 40)}-${dateString}`;
 };
 
 // The ChevronIcon component
@@ -29,7 +29,7 @@ const ChevronIcon = ({ isOpen }) => (
   </svg>
 );
 
-const MealItem = ({ item, onToggle, anonymousId, stationName, isRatingVisible }) => {
+const MealItem = ({ item, onToggle, anonymousId, stationName, isRatingVisible, showRatingCount }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
   const contentRef = useRef(null);
@@ -50,7 +50,7 @@ const MealItem = ({ item, onToggle, anonymousId, stationName, isRatingVisible })
         tl.to(container, { height: 0, marginTop: 0, borderWidth: 0, duration: 0.4, ease: 'power2.inOut' });
       }
     }
-    const timer = setTimeout(() => { onToggle(); }, 400); 
+    const timer = setTimeout(() => { onToggle(); }, 400);
     return () => clearTimeout(timer);
   }, [isOpen, onToggle]);
 
@@ -66,23 +66,23 @@ const MealItem = ({ item, onToggle, anonymousId, stationName, isRatingVisible })
         <span className="meal-name">
           {item.meal}
         </span>
-        
+
         <div className="meal-rhs-content">
           {hasDescription && (
             <div className="chevron-container">
               <ChevronIcon isOpen={isOpen} />
             </div>
           )}
-          
+
           {/* Conditionally render the rating system based on the new prop */}
           {isRatingVisible && anonymousId && (
             <div onClick={(e) => e.stopPropagation()}>
-              <MealRating mealId={mealId} anonymousId={anonymousId} />
+              <MealRating mealId={mealId} anonymousId={anonymousId} showRatingCount={showRatingCount} />
             </div>
           )}
         </div>
       </div>
-      
+
       {hasDescription && (
         <div className="meal-description-container" ref={containerRef}>
           <p className="meal-description" ref={contentRef}>{item.description}</p>

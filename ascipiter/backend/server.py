@@ -209,7 +209,7 @@ def rate_meal():
     data = request.get_json()
     mealId, anonymousId, new_rating = data.get('mealId'), data.get('anonymousId'), data.get('rating')
 
-    if not all([mealId, anonymousId, new_rating]):
+    if not mealId or not anonymousId or new_rating is None:
         return jsonify({"error": "Missing data"}), 400
 
     conn = get_ratings_db_connection()
@@ -218,7 +218,12 @@ def rate_meal():
     try:
         voter_record = cursor.execute('SELECT rating FROM voters WHERE mealId = ? AND anonymousId = ?', (mealId, anonymousId)).fetchone()
 
-        if voter_record:
+        if new_rating == 0:
+            if voter_record:
+                old_rating = voter_record['rating']
+                cursor.execute('DELETE FROM voters WHERE mealId = ? AND anonymousId = ?', (mealId, anonymousId))
+                cursor.execute('UPDATE ratings SET totalStars = totalStars - ?, ratingCount = ratingCount - 1 WHERE mealId = ?', (old_rating, mealId))
+        elif voter_record:
             old_rating = voter_record['rating']
             cursor.execute('UPDATE voters SET rating = ? WHERE mealId = ? AND anonymousId = ?', (new_rating, mealId, anonymousId))
             cursor.execute('UPDATE ratings SET totalStars = totalStars - ? + ? WHERE mealId = ?', (old_rating, new_rating, mealId))

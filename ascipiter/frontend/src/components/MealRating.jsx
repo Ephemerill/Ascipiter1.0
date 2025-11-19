@@ -31,7 +31,7 @@ const RatingModal = ({ onRate, onClose }) => {
         <h4>Rate this item</h4>
         <div className="modal-stars-wrapper">
           {stars.map((_, i) => (
-            <Star key={i} isFilled={false} onClick={() => handleRate(i + 1)} onMouseEnter={() => {}} onMouseLeave={() => {}} />
+            <Star key={i} isFilled={false} onClick={() => handleRate(i + 1)} onMouseEnter={() => { }} onMouseLeave={() => { }} />
           ))}
         </div>
       </div>
@@ -42,8 +42,9 @@ const RatingModal = ({ onRate, onClose }) => {
 
 
 // --- Main MealRating Component ---
-const MealRating = ({ mealId, anonymousId }) => {
+const MealRating = ({ mealId, anonymousId, showRatingCount }) => {
   const [ratingData, setRatingData] = useState({ averageRating: 0, ratingCount: 0, userRating: 0 });
+  const { averageRating, ratingCount, userRating } = ratingData;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -59,7 +60,7 @@ const MealRating = ({ mealId, anonymousId }) => {
 
   useEffect(() => {
     tl.current.to(barRef.current, { opacity: 0, scale: 0.95, filter: 'blur(5px)', duration: 0.2, ease: 'power2.in' })
-             .to(starsRef.current, { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 0.2, ease: 'power2.out' }, "-=0.1");
+      .to(starsRef.current, { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 0.2, ease: 'power2.out' }, "-=0.1");
   }, []);
 
   const fetchRatingData = useCallback(async () => {
@@ -81,10 +82,13 @@ const MealRating = ({ mealId, anonymousId }) => {
 
   const submitRating = useCallback(async (newRating) => {
     try {
+      // If clicking the same rating, remove it (send 0)
+      const ratingToSend = newRating === userRating ? 0 : newRating;
+
       const response = await fetch(`${API_BASE_URL}/rate-meal`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mealId, anonymousId, rating: newRating }),
+        body: JSON.stringify({ mealId, anonymousId, rating: ratingToSend }),
       });
       if (response.ok) {
         fetchRatingData();
@@ -92,13 +96,12 @@ const MealRating = ({ mealId, anonymousId }) => {
     } catch (error) {
       console.error("Error submitting rating:", error);
     }
-  }, [mealId, anonymousId, fetchRatingData]);
+  }, [mealId, anonymousId, fetchRatingData, userRating]);
 
   const handleMouseEnter = () => !isMobile && tl.current.play();
   const handleMouseLeave = () => !isMobile && tl.current.reverse();
   const handleClick = () => isMobile && setIsModalOpen(true);
 
-  const { averageRating, ratingCount, userRating } = ratingData;
   const barColor = ratingCount > 0 ? getRatingColor(averageRating) : 'transparent';
   const barWidth = ratingCount > 0 ? `${(averageRating / 5) * 100}%` : '0%';
 
@@ -114,13 +117,14 @@ const MealRating = ({ mealId, anonymousId }) => {
         <div ref={barRef} className="rating-bar-background">
           <div className="rating-bar-fill" style={{ width: barWidth, backgroundColor: barColor }} />
         </div>
-        
+
         <div ref={starsRef} className="rating-stars-interactive">
           {Array(5).fill(0).map((_, i) => (
-            <Star key={i} isFilled={userRating > i} onClick={() => submitRating(i + 1)} onMouseEnter={() => {}} onMouseLeave={() => {}} />
+            <Star key={i} isFilled={userRating > i} onClick={() => submitRating(i + 1)} onMouseEnter={() => { }} onMouseLeave={() => { }} />
           ))}
         </div>
       </div>
+      {showRatingCount && ratingCount > 0 && <span className="rating-count" style={{ marginLeft: '8px', fontSize: '0.9em', color: '#666' }}>({ratingCount})</span>}
 
       {isModalOpen && <RatingModal onRate={submitRating} onClose={() => setIsModalOpen(false)} />}
     </>

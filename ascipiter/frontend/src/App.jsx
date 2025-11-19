@@ -20,16 +20,16 @@ const originalError = console.error;
 const originalWarn = console.warn;
 
 console.log = (...args) => {
-    consoleLogs.push(`LOG: ${JSON.stringify(args)}`);
-    originalLog(...args);
+  consoleLogs.push(`LOG: ${JSON.stringify(args)}`);
+  originalLog(...args);
 };
 console.error = (...args) => {
-    consoleLogs.push(`ERROR: ${JSON.stringify(args)}`);
-    originalError(...args);
+  consoleLogs.push(`ERROR: ${JSON.stringify(args)}`);
+  originalError(...args);
 };
 console.warn = (...args) => {
-    consoleLogs.push(`WARN: ${JSON.stringify(args)}`);
-    originalWarn(...args);
+  consoleLogs.push(`WARN: ${JSON.stringify(args)}`);
+  originalWarn(...args);
 };
 // ------------------------------
 
@@ -119,9 +119,9 @@ const DAILY_MEAL_HOURS = [
 
 // --- Helper function to get meal hours for the current day ---
 const getMealHoursForToday = (mealPeriod) => {
-    const todayIndex = new Date().getDay();
-    const hours = DAILY_MEAL_HOURS[todayIndex][mealPeriod];
-    return hours || "Not served today";
+  const todayIndex = new Date().getDay();
+  const hours = DAILY_MEAL_HOURS[todayIndex][mealPeriod];
+  return hours || "Not served today";
 };
 
 
@@ -177,159 +177,159 @@ const parseChapelDate = (timeString) => {
 
 // --- Arc Style Color Picker ---
 const AdvancedColorPicker = ({ angle1, setAngle1, angle2, setAngle2, saturation, setSaturation, lightness, setLightness }) => {
-    const pickerRef = useRef(null);
-    const [dragging, setDragging] = useState(null);
+  const pickerRef = useRef(null);
+  const [dragging, setDragging] = useState(null);
 
-    const angleToPos = (angle) => {
-        const rad = angle * (Math.PI / 180);
-        return {
-            x: 50 + 50 * Math.cos(rad),
-            y: 50 + 50 * Math.sin(rad),
-        };
+  const angleToPos = (angle) => {
+    const rad = angle * (Math.PI / 180);
+    return {
+      x: 50 + 50 * Math.cos(rad),
+      y: 50 + 50 * Math.sin(rad),
     };
+  };
 
-    const posToAngle = (x, y, rect) => {
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        let angle = Math.atan2(y - centerY, x - centerX) * (180 / Math.PI);
-        return (angle + 360) % 360;
+  const posToAngle = (x, y, rect) => {
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    let angle = Math.atan2(y - centerY, x - centerX) * (180 / Math.PI);
+    return (angle + 360) % 360;
+  };
+
+  const angleToHsl = (angle) => `hsl(${angle}, ${saturation}%, ${lightness}%)`;
+
+  const handleInteraction = (e, handleId) => {
+    const picker = pickerRef.current;
+    if (!picker) return;
+    const rect = picker.getBoundingClientRect();
+    const clientX = e.clientX || e.touches[0].clientX;
+    const clientY = e.clientY || e.touches[0].clientY;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const angle = posToAngle(x, y, rect);
+
+    if (handleId) {
+      if (handleId === 'handle1') setAngle1(angle);
+      else setAngle2(angle);
+    } else {
+      const pos1 = angleToPos(angle1);
+      const pos2 = angleToPos(angle2);
+      const clickPos = { x: (x / rect.width) * 100, y: (y / rect.height) * 100 };
+      const dist1 = Math.hypot(clickPos.x - pos1.x, clickPos.y - pos1.y);
+      const dist2 = Math.hypot(clickPos.x - pos2.x, clickPos.y - pos2.y);
+      if (dist1 < dist2) setAngle1(angle);
+      else setAngle2(angle);
+    }
+  };
+
+  const handleStart = (e, handleId) => {
+    e.stopPropagation();
+    setDragging(handleId);
+  };
+
+  const handleMove = useCallback((e) => {
+    if (!dragging) return;
+    e.preventDefault();
+    handleInteraction(e, dragging);
+  }, [dragging, handleInteraction]);
+
+  const handleEnd = useCallback(() => setDragging(null), []);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleEnd);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleEnd);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleEnd);
     };
+  }, [handleMove, handleEnd]);
 
-    const angleToHsl = (angle) => `hsl(${angle}, ${saturation}%, ${lightness}%)`;
+  const handle1Pos = angleToPos(angle1);
+  const handle2Pos = angleToPos(angle2);
 
-    const handleInteraction = (e, handleId) => {
-        const picker = pickerRef.current;
-        if (!picker) return;
-        const rect = picker.getBoundingClientRect();
-        const clientX = e.clientX || e.touches[0].clientX;
-        const clientY = e.clientY || e.touches[0].clientY;
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
-        const angle = posToAngle(x, y, rect);
+  const gradientPresets = useMemo(() => [
+    { name: 'Twilight', c1: '#756880ff', c2: '#ADD8E6' },
+    { name: 'Sunrise', c1: '#ff7e5f', c2: '#feb47b' },
+    { name: 'Ocean', c1: '#00c6ff', c2: '#0072ff' },
+    { name: 'Mango', c1: '#22c1c3', c2: '#fdbb2d' },
+    { name: 'Rose', c1: '#e55d87', c2: '#5fc3e4' },
+    { name: 'Night', c1: '#2c3e50', c2: '#4ca1af' },
+  ], []);
 
-        if (handleId) {
-            if (handleId === 'handle1') setAngle1(angle);
-            else setAngle2(angle);
-        } else {
-            const pos1 = angleToPos(angle1);
-            const pos2 = angleToPos(angle2);
-            const clickPos = { x: (x / rect.width) * 100, y: (y / rect.height) * 100 };
-            const dist1 = Math.hypot(clickPos.x - pos1.x, clickPos.y - pos1.y);
-            const dist2 = Math.hypot(clickPos.x - pos2.x, clickPos.y - pos2.y);
-            if (dist1 < dist2) setAngle1(angle);
-            else setAngle2(angle);
-        }
-    };
-    
-    const handleStart = (e, handleId) => {
-        e.stopPropagation();
-        setDragging(handleId);
-    };
+  const hexToHslAngle = (hex) => {
+    let r = 0, g = 0, b = 0;
+    if (hex.length === 4) {
+      r = "0x" + hex[1] + hex[1];
+      g = "0x" + hex[2] + hex[2];
+      b = "0x" + hex[3] + hex[3];
+    } else if (hex.length === 7) {
+      r = "0x" + hex[1] + hex[2];
+      g = "0x" + hex[3] + hex[4];
+      b = "0x" + hex[5] + hex[6];
+    }
+    r /= 255; g /= 255; b /= 255;
+    let cmin = Math.min(r, g, b), cmax = Math.max(r, g, b), delta = cmax - cmin, h = 0;
+    if (delta === 0) h = 0;
+    else if (cmax === r) h = ((g - b) / delta) % 6;
+    else if (cmax === g) h = (b - r) / delta + 2;
+    else h = (r - g) / delta + 4;
+    h = Math.round(h * 60);
+    if (h < 0) h += 360;
+    return h;
+  };
 
-    const handleMove = useCallback((e) => {
-        if (!dragging) return;
-        e.preventDefault();
-        handleInteraction(e, dragging);
-    }, [dragging, handleInteraction]);
+  const handlePresetSelect = (preset) => {
+    setAngle1(hexToHslAngle(preset.c1));
+    setAngle2(hexToHslAngle(preset.c2));
+    setSaturation(80);
+    setLightness(70);
+  };
 
-    const handleEnd = useCallback(() => setDragging(null), []);
+  const handleDefault = () => {
+    setAngle1(258); // Dark Purple
+    setAngle2(238); // Light Purple
+    setSaturation(5);
+    setLightness(70);
+  };
 
-    useEffect(() => {
-        window.addEventListener('mousemove', handleMove);
-        window.addEventListener('mouseup', handleEnd);
-        window.addEventListener('touchmove', handleMove, { passive: false });
-        window.addEventListener('touchend', handleEnd);
-        return () => {
-            window.removeEventListener('mousemove', handleMove);
-            window.removeEventListener('mouseup', handleEnd);
-            window.removeEventListener('touchmove', handleMove);
-            window.removeEventListener('touchend', handleEnd);
-        };
-    }, [handleMove, handleEnd]);
+  const LowSatIcon = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="url(#paint0_linear_1_2)" /><defs><linearGradient id="paint0_linear_1_2" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop stopColor="#E0E0E0" /><stop offset="1" stopColor="#BDBDBD" /></linearGradient></defs></svg>);
+  const HighSatIcon = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="url(#paint0_radial_1_3)" /><defs><radialGradient id="paint0_radial_1_3" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(12 12) rotate(90) scale(10)"><stop stopColor="#FF8A8A" /><stop offset="0.5" stopColor="#82B1FF" /><stop offset="1" stopColor="#B9F6CA" /></radialGradient></defs></svg>);
+  const DarkIcon = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#424242" /></svg>);
+  const LightIcon = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#E0E0E0" /></svg>);
 
-    const handle1Pos = angleToPos(angle1);
-    const handle2Pos = angleToPos(angle2);
-
-    const gradientPresets = useMemo(() => [
-        { name: 'Twilight', c1: '#756880ff', c2: '#ADD8E6' },
-        { name: 'Sunrise', c1: '#ff7e5f', c2: '#feb47b' },
-        { name: 'Ocean', c1: '#00c6ff', c2: '#0072ff' },
-        { name: 'Mango', c1: '#22c1c3', c2: '#fdbb2d' },
-        { name: 'Rose', c1: '#e55d87', c2: '#5fc3e4' },
-        { name: 'Night', c1: '#2c3e50', c2: '#4ca1af' },
-    ], []);
-
-    const hexToHslAngle = (hex) => {
-        let r = 0, g = 0, b = 0;
-        if (hex.length === 4) {
-            r = "0x" + hex[1] + hex[1];
-            g = "0x" + hex[2] + hex[2];
-            b = "0x" + hex[3] + hex[3];
-        } else if (hex.length === 7) {
-            r = "0x" + hex[1] + hex[2];
-            g = "0x" + hex[3] + hex[4];
-            b = "0x" + hex[5] + hex[6];
-        }
-        r /= 255; g /= 255; b /= 255;
-        let cmin = Math.min(r,g,b), cmax = Math.max(r,g,b), delta = cmax - cmin, h = 0;
-        if (delta === 0) h = 0;
-        else if (cmax === r) h = ((g - b) / delta) % 6;
-        else if (cmax === g) h = (b - r) / delta + 2;
-        else h = (r - g) / delta + 4;
-        h = Math.round(h * 60);
-        if (h < 0) h += 360;
-        return h;
-    };
-
-    const handlePresetSelect = (preset) => {
-        setAngle1(hexToHslAngle(preset.c1));
-        setAngle2(hexToHslAngle(preset.c2));
-        setSaturation(80);
-        setLightness(70);
-    };
-
-    const handleDefault = () => {
-        setAngle1(258); // Dark Purple
-        setAngle2(238); // Light Purple
-        setSaturation(5);
-        setLightness(70);
-    };
-
-    const LowSatIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="url(#paint0_linear_1_2)"/><defs><linearGradient id="paint0_linear_1_2" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop stopColor="#E0E0E0"/><stop offset="1" stopColor="#BDBDBD"/></linearGradient></defs></svg> );
-    const HighSatIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="url(#paint0_radial_1_3)"/><defs><radialGradient id="paint0_radial_1_3" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(12 12) rotate(90) scale(10)"><stop stopColor="#FF8A8A"/><stop offset="0.5" stopColor="#82B1FF"/><stop offset="1" stopColor="#B9F6CA"/></radialGradient></defs></svg> );
-    const DarkIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#424242"/></svg> );
-    const LightIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#E0E0E0"/></svg> );
-
-    return (
-        <div className="advanced-color-picker">
-              <div className="preset-swatches-container">
-                  {gradientPresets.map(p => (
-                      <button key={p.name} className="color-swatch" style={{ background: `linear-gradient(45deg, ${p.c1}, ${p.c2})` }} onClick={() => handlePresetSelect(p)} />
-                  ))}
-                  <button className="default-color-button" onClick={handleDefault}>Default</button>
-              </div>
-            <div className="arc-picker-wrapper">
-                <div ref={pickerRef} className="picker-area" onClick={(e) => handleInteraction(e, null)}>
-                    <div className="picker-handle" style={{ left: `${handle1Pos.x}%`, top: `${handle1Pos.y}%`, backgroundColor: angleToHsl(angle1) }} onMouseDown={(e) => handleStart(e, 'handle1')} onTouchStart={(e) => handleStart(e, 'handle1')} />
-                    <div className="picker-handle" style={{ left: `${handle2Pos.x}%`, top: `${handle2Pos.y}%`, backgroundColor: angleToHsl(angle2) }} onMouseDown={(e) => handleStart(e, 'handle2')} onTouchStart={(e) => handleStart(e, 'handle2')} />
-                </div>
-            </div>
-            <div className="sliders-wrapper">
-                <div className="slider-control">
-                    <label>Saturation</label>
-                    <ElasticSlider value={saturation} onChange={setSaturation} maxValue={100} leftIcon={<LowSatIcon />} rightIcon={<HighSatIcon />} />
-                </div>
-                <div className="slider-control">
-                    <label>Lightness</label>
-                    <ElasticSlider value={lightness} onChange={setLightness} maxValue={100} leftIcon={<DarkIcon />} rightIcon={<LightIcon />} />
-                </div>
-            </div>
+  return (
+    <div className="advanced-color-picker">
+      <div className="preset-swatches-container">
+        {gradientPresets.map(p => (
+          <button key={p.name} className="color-swatch" style={{ background: `linear-gradient(45deg, ${p.c1}, ${p.c2})` }} onClick={() => handlePresetSelect(p)} />
+        ))}
+        <button className="default-color-button" onClick={handleDefault}>Default</button>
+      </div>
+      <div className="arc-picker-wrapper">
+        <div ref={pickerRef} className="picker-area" onClick={(e) => handleInteraction(e, null)}>
+          <div className="picker-handle" style={{ left: `${handle1Pos.x}%`, top: `${handle1Pos.y}%`, backgroundColor: angleToHsl(angle1) }} onMouseDown={(e) => handleStart(e, 'handle1')} onTouchStart={(e) => handleStart(e, 'handle1')} />
+          <div className="picker-handle" style={{ left: `${handle2Pos.x}%`, top: `${handle2Pos.y}%`, backgroundColor: angleToHsl(angle2) }} onMouseDown={(e) => handleStart(e, 'handle2')} onTouchStart={(e) => handleStart(e, 'handle2')} />
         </div>
-    );
+      </div>
+      <div className="sliders-wrapper">
+        <div className="slider-control">
+          <label>Saturation</label>
+          <ElasticSlider value={saturation} onChange={setSaturation} maxValue={100} leftIcon={<LowSatIcon />} rightIcon={<HighSatIcon />} />
+        </div>
+        <div className="slider-control">
+          <label>Lightness</label>
+          <ElasticSlider value={lightness} onChange={setLightness} maxValue={100} leftIcon={<DarkIcon />} rightIcon={<LightIcon />} />
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // --- Settings Page Component ---
-const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isCreditsVisible, onToggleCreditsVisible, showMealHours, onToggleShowMealHours, isRatingVisible, onToggleRatingVisible, isDayPickerVisible, onToggleDayPicker, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi, silkAngle1, setSilkAngle1, silkAngle2, setSilkAngle2, silkSaturation, setSilkSaturation, silkLightness, setSilkLightness, triggerCardResize }, ref) => {
+const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel, isCreditsVisible, onToggleCreditsVisible, showMealHours, onToggleShowMealHours, isRatingVisible, onToggleRatingVisible, showRatingCount, onToggleShowRatingCount, isDayPickerVisible, onToggleDayPicker, isAiVisible, onToggleAi, isSarcasticAi, onToggleSarcasticAi, silkAngle1, setSilkAngle1, silkAngle2, setSilkAngle2, silkSaturation, setSilkSaturation, silkLightness, setSilkLightness, triggerCardResize }, ref) => {
   const [activeTab, setActiveTab] = useState('General');
   const [loadData, setLoadData] = useState(null);
   const settingsPages = ['General', 'AI Settings', 'Appearance', 'About'];
@@ -340,7 +340,7 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
       fetch(`${import.meta.env.VITE_API_BASE_URL}/get-loads`)
         .then(res => res.json())
         .then(data => {
-            setLoadData(data);
+          setLoadData(data);
         })
         .catch(console.error);
     }
@@ -348,9 +348,9 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
 
   useLayoutEffect(() => {
     if (contentRef.current && triggerCardResize) {
-        const timer = setTimeout(triggerCardResize, 50);
-        gsap.fromTo(contentRef.current, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' });
-        return () => clearTimeout(timer);
+      const timer = setTimeout(triggerCardResize, 50);
+      gsap.fromTo(contentRef.current, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' });
+      return () => clearTimeout(timer);
     }
   }, [activeTab, triggerCardResize]);
 
@@ -366,44 +366,45 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
             <ToggleSwitch label={isCreditsVisible ? "Hide Credit Counter" : "Show Credit Counter"} isToggled={isCreditsVisible} onToggle={onToggleCreditsVisible} />
             <ToggleSwitch label={showMealHours ? "Hide Meal Times" : "Show Meal Times"} isToggled={showMealHours} onToggle={onToggleShowMealHours} />
             <ToggleSwitch label={isRatingVisible ? "Hide Rating System" : "Show Rating System"} isToggled={isRatingVisible} onToggle={onToggleRatingVisible} />
+            {isRatingVisible && <ToggleSwitch label={showRatingCount ? "Hide Rating Count" : "Show Rating Count"} isToggled={showRatingCount} onToggle={onToggleShowRatingCount} />}
           </div>
         );
       case 'AI Settings':
         return (
-            <div>
-                <h3>AI Settings</h3>
-                <p>Control the AI features and personality.</p>
-                <ToggleSwitch label={isAiVisible ? "Hide AI Helper" : "Show AI Helper"} isToggled={isAiVisible} onToggle={onToggleAi} />
-                <ToggleSwitch label="Sarcastic AI" isToggled={isSarcasticAi} onToggle={onToggleSarcasticAi} />
-            </div>
+          <div>
+            <h3>AI Settings</h3>
+            <p>Control the AI features and personality.</p>
+            <ToggleSwitch label={isAiVisible ? "Hide AI Helper" : "Show AI Helper"} isToggled={isAiVisible} onToggle={onToggleAi} />
+            <ToggleSwitch label="Sarcastic AI" isToggled={isSarcasticAi} onToggle={onToggleSarcasticAi} />
+          </div>
         );
       case 'Appearance':
         return (
-            <div className="appearance-settings">
-                <h3>Appearance</h3>
-                <p>Change the background by dragging the bubbles.</p>
-                <AdvancedColorPicker 
-                  angle1={silkAngle1} setAngle1={setSilkAngle1} 
-                  angle2={silkAngle2} setAngle2={setSilkAngle2} 
-                  saturation={silkSaturation} setSaturation={setSilkSaturation}
-                  lightness={silkLightness} setLightness={setSilkLightness}
-                />
-            </div>
+          <div className="appearance-settings">
+            <h3>Appearance</h3>
+            <p>Change the background by dragging the bubbles.</p>
+            <AdvancedColorPicker
+              angle1={silkAngle1} setAngle1={setSilkAngle1}
+              angle2={silkAngle2} setAngle2={setSilkAngle2}
+              saturation={silkSaturation} setSaturation={setSilkSaturation}
+              lightness={silkLightness} setLightness={setSilkLightness}
+            />
+          </div>
         );
       case 'About':
         const todayData = loadData ? loadData[0] : null;
         return (
-            <div>
-                <h3>About</h3>
-                <p>Biola Wizard 2.11</p>
-                <p>By Gabriel Losh</p>
-                <p>This Tool Was Built With The Assistance of AI</p>
-                {loadData ? (
-                    <p>Page loads today: {todayData.count}</p>
-                ) : (
-                    <p>Loading stats...</p>
-                )}
-            </div>
+          <div>
+            <h3>About</h3>
+            <p>Biola Wizard 2.11</p>
+            <p>By Gabriel Losh</p>
+            <p>This Tool Was Built With The Assistance of AI</p>
+            {loadData ? (
+              <p>Page loads today: {todayData.count}</p>
+            ) : (
+              <p>Loading stats...</p>
+            )}
+          </div>
         );
       default: return null;
     }
@@ -417,7 +418,7 @@ const SettingsPage = React.forwardRef(({ onBack, isChapelVisible, onToggleChapel
       </div>
       <div className="settings-body">
         <div className="settings-nav">
-          {settingsPages.map(page => ( <button key={page} className={`settings-nav-item ${activeTab === page ? 'active' : ''}`} onClick={() => setActiveTab(page)}>{page}</button>))}
+          {settingsPages.map(page => (<button key={page} className={`settings-nav-item ${activeTab === page ? 'active' : ''}`} onClick={() => setActiveTab(page)}>{page}</button>))}
         </div>
         <div className="settings-content" ref={contentRef}>{renderContent()}</div>
       </div>
@@ -452,6 +453,7 @@ function App() {
   const [isAiVisible, setIsAiVisible] = useState(() => getCookie('aiVisible') === 'true');
   const [isSarcasticAi, setIsSarcasticAi] = useState(() => getCookie('sarcasticAiVisible') === 'true');
   const [isDayPickerVisible, setIsDayPickerVisible] = useState(() => getCookie('dayPickerVisible') !== 'false');
+  const [showRatingCount, setShowRatingCount] = useState(() => getCookie('showRatingCount') === 'true');
 
   const [silkAngle1, setSilkAngle1] = useState(() => parseFloat(getCookie('silkAngle1')) || 258);
   const [silkAngle2, setSilkAngle2] = useState(() => parseFloat(getCookie('silkAngle2')) || 238);
@@ -469,7 +471,7 @@ function App() {
   const pageContentRef = useRef(null);
   const chapelContentRef = useRef(null);
   const settingsContentRef = useRef(null);
-  
+
   const effectRan = useRef(false);
   const isInitialLoad = useRef(true);
 
@@ -498,7 +500,9 @@ function App() {
   useEffect(() => { setCookie('silkAngle1', silkAngle1, 365); }, [silkAngle1]);
   useEffect(() => { setCookie('silkAngle2', silkAngle2, 365); }, [silkAngle2]);
   useEffect(() => { setCookie('silkSaturation', silkSaturation, 365); }, [silkSaturation]);
+  useEffect(() => { setCookie('silkSaturation', silkSaturation, 365); }, [silkSaturation]);
   useEffect(() => { setCookie('silkLightness', silkLightness, 365); }, [silkLightness]);
+  useEffect(() => { setCookie('showRatingCount', showRatingCount, 365); }, [showRatingCount]);
 
   const showToast = useCallback((message) => {
     setToast({ show: true, message });
@@ -514,10 +518,10 @@ function App() {
       return;
     }
     gsap.to(contentToFadeOut, {
-        opacity: 0,
-        duration: 0.4,
-        ease: 'power2.in',
-        onComplete: () => setIsSettingsVisible(v => !v)
+      opacity: 0,
+      duration: 0.4,
+      ease: 'power2.in',
+      onComplete: () => setIsSettingsVisible(v => !v)
     });
   }, [isSettingsVisible]);
 
@@ -526,9 +530,9 @@ function App() {
   }, []);
 
   const navItemsTemplate = useMemo(() => [
-    { label: "Help", textColor: "#fff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [ { label: "Donate to me :)", ariaLabel: "donate", href: "https://buymeacoffee.com/ephemeril", target: "_blank"}, { label: "Send Feedback", ariaLabel: "Send Feedback", type: 'button', onClick: toggleFeedbackModal } ] },
-    { label: "Preferences", textColor: "#fff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [ { label: "Show AI", ariaLabel: "Toggle AI Helper", type: 'toggle', id: 'ai-toggle' }, { label: "Show Chapel Schedule", ariaLabel: "Toggle Chapel Schedule display", type: 'toggle', id: 'chapel-toggle' }, { label: "Settings", ariaLabel: "Open or Close Settings Page", type: 'button', onClick: toggleSettingsPage } ] },
-    { label: "Useful Links", textColor: "#ffffffff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [ { label: "Github", ariaLabel: "github", href: "https://github.com/Ephemerill/Ascipiter1.0", target: "_blank" }, { label: "Legacy", ariaLabel: "Legacy Site", href: "https://legacy.biolawizard.com/", target: "_blank" }, { label: "Caf Website", ariaLabel: "Caf Website", href: "https://cafebiola.cafebonappetit.com/cafe/cafe-biola/", target: "_blank" } ] }
+    { label: "Help", textColor: "#fff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [{ label: "Donate to me :)", ariaLabel: "donate", href: "https://buymeacoffee.com/ephemeril", target: "_blank" }, { label: "Send Feedback", ariaLabel: "Send Feedback", type: 'button', onClick: toggleFeedbackModal }] },
+    { label: "Preferences", textColor: "#fff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [{ label: "Show AI", ariaLabel: "Toggle AI Helper", type: 'toggle', id: 'ai-toggle' }, { label: "Show Chapel Schedule", ariaLabel: "Toggle Chapel Schedule display", type: 'toggle', id: 'chapel-toggle' }, { label: "Settings", ariaLabel: "Open or Close Settings Page", type: 'button', onClick: toggleSettingsPage }] },
+    { label: "Useful Links", textColor: "#ffffffff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [{ label: "Github", ariaLabel: "github", href: "https://github.com/Ephemerill/Ascipiter1.0", target: "_blank" }, { label: "Legacy", ariaLabel: "Legacy Site", href: "https://legacy.biolawizard.com/", target: "_blank" }, { label: "Caf Website", ariaLabel: "Caf Website", href: "https://cafebiola.cafebonappetit.com/cafe/cafe-biola/", target: "_blank" }] }
   ], [toggleSettingsPage, toggleFeedbackModal]);
 
   const triggerCardResize = useCallback(() => {
@@ -553,16 +557,16 @@ function App() {
       return;
     }
     setAiResponses(prev => ({ ...prev, [stationName]: { isLoading: true, data: null, error: null } }));
-    
-    const payload = { 
-        station_meals: station.options.map(opt => ({ 
-            title: opt.meal, 
-            description: opt.description || "" 
-        })) 
+
+    const payload = {
+      station_meals: station.options.map(opt => ({
+        title: opt.meal,
+        description: opt.description || ""
+      }))
     };
 
     if (isSarcasticAi) {
-        payload.extra_prompt = "Be cynical, the meal will probably not taste very good.";
+      payload.extra_prompt = "Be cynical, the meal will probably not taste very good.";
     }
 
     try {
@@ -601,8 +605,8 @@ function App() {
       try {
         const refreshResponse = await fetch(`${API_BASE_URL}/menu/refresh`);
         if (refreshResponse.status === 200) {
-            const newData = await refreshResponse.json();
-            if (isMounted) setMenuData(newData);
+          const newData = await refreshResponse.json();
+          if (isMounted) setMenuData(newData);
         }
       } catch (e) {
         console.error("Error during background menu refresh:", e);
@@ -624,7 +628,7 @@ function App() {
         if (isMounted) setIsChapelLoading(false);
       }
     };
-    
+
     // Fetch weekly menu data
     const fetchWeeklyMenu = async () => {
       if (!isMounted) return;
@@ -633,7 +637,7 @@ function App() {
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
         if (isMounted) setWeeklyMenuData(data);
-      } catch(e) {
+      } catch (e) {
         console.error("Could not fetch weekly menu:", e);
       }
     };
@@ -650,7 +654,7 @@ function App() {
     const card = mealCardRef.current;
     const content = pageContentRef.current;
     const targetHeight = mealContentRef.current.scrollHeight;
-  
+
     if (isInitialLoad.current) {
       isInitialLoad.current = false;
       const tl = gsap.timeline();
@@ -676,15 +680,15 @@ function App() {
     if (!dayMenu) return null;
     const transformed = {};
     for (const mealPeriod in dayMenu) { // Breakfast, Lunch, Dinner
-        const stations = dayMenu[mealPeriod];
-        const stationArray = [];
-        for (const stationName in stations) {
-            stationArray.push({
-                name: stationName,
-                options: stations[stationName].map(mealName => ({ meal: mealName, description: null }))
-            });
-        }
-        transformed[mealPeriod.toLowerCase()] = stationArray;
+      const stations = dayMenu[mealPeriod];
+      const stationArray = [];
+      for (const stationName in stations) {
+        stationArray.push({
+          name: stationName,
+          options: stations[stationName].map(mealName => ({ meal: mealName, description: null }))
+        });
+      }
+      transformed[mealPeriod.toLowerCase()] = stationArray;
     }
     return transformed;
   };
@@ -692,7 +696,7 @@ function App() {
   // Memoized value to determine which menu to display
   const displayedMenu = useMemo(() => {
     if (selectedDay === 'Today' || !weeklyMenuData) {
-        return menuData;
+      return menuData;
     }
     const dayData = weeklyMenuData[selectedDay];
     return transformWeeklyDayMenu(dayData);
@@ -701,19 +705,19 @@ function App() {
   // Logic to get available future days in correct order
   const futureDays = useMemo(() => {
     if (!weeklyMenuData) return [];
-    
+
     // Canonical order
     const dayOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    
+
     // Map JS Date's getDay() index (Sun=0) to our abbreviation
     const jsDayToAbbr = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const todayAbbr = jsDayToAbbr[new Date().getDay()];
-    
+
     // Find the index of today in our canonical order
     const todayIndexInOrder = dayOrder.indexOf(todayAbbr);
 
     if (todayIndexInOrder === -1) {
-        return dayOrder.filter(day => weeklyMenuData[day]);
+      return dayOrder.filter(day => weeklyMenuData[day]);
     }
 
     // Filter for all FUTURE days that exist in scraped data (excluding today)
@@ -729,7 +733,7 @@ function App() {
 
   const renderCardContent = () => {
     if (isMenuLoading) {
-        return showMenuLoader ? <h2 style={{ textAlign: 'center' }}>Loading Menu</h2> : null;
+      return showMenuLoader ? <h2 style={{ textAlign: 'center' }}>Loading Menu</h2> : null;
     }
     if (menuError) return <><h2>Oops!</h2><p>Could not load menu: {menuError}</p></>;
     if (!displayedMenu) return <h2>No Menu Data for {selectedDay}</h2>;
@@ -742,13 +746,13 @@ function App() {
     const todaysHours = getMealHoursForToday(activePage);
 
     if (!mealPeriodData || mealPeriodData.length === 0) {
-        return (
-            <>
-              <h2 className="meal-period-title">{mealPeriodName}</h2>
-              {showMealHours && selectedDay === 'Today' && <p className="meal-period-hours">{todaysHours}</p>}
-              <p>No items listed for this meal.</p>
-            </>
-        );
+      return (
+        <>
+          <h2 className="meal-period-title">{mealPeriodName}</h2>
+          {showMealHours && selectedDay === 'Today' && <p className="meal-period-hours">{todaysHours}</p>}
+          <p>No items listed for this meal.</p>
+        </>
+      );
     }
     return (
       <div className="menu-content">
@@ -759,7 +763,7 @@ function App() {
           return (
             <div key={index} className="station">
               <div className="station-header"><h3 className="station-name">{station.name}</h3>{isAiVisible && <button className="explain-button" onClick={() => handleExplainStation(station)}>explain this</button>}</div>
-              <ul className="meal-list">{station.options.map((item, itemIndex) => <MealItem key={itemIndex} item={{...item, meal: capitalizeWords(item.meal)}} onToggle={triggerCardResize} anonymousId={anonymousId} stationName={station.name} isRatingVisible={isRatingVisible && selectedDay === 'Today'} />)}</ul>
+              <ul className="meal-list">{station.options.map((item, itemIndex) => <MealItem key={itemIndex} item={{ ...item, meal: capitalizeWords(item.meal) }} onToggle={triggerCardResize} anonymousId={anonymousId} stationName={station.name} isRatingVisible={isRatingVisible && selectedDay === 'Today'} showRatingCount={showRatingCount} />)}</ul>
               {!!aiResponses[station.name] && <div id={`ai-response-${stationId}`}><AiResponse responseState={aiResponses[station.name]} onClose={() => closeAiResponse(station.name)} onCharTyped={triggerCardResize} /></div>}
             </div>
           );
@@ -770,7 +774,7 @@ function App() {
 
   const renderChapelContent = () => {
     if (isChapelLoading) {
-        return showChapelLoader ? <><h2 className="meal-period-title">Chapel</h2><p>Loading Chapel...</p></> : null;
+      return showChapelLoader ? <><h2 className="meal-period-title">Chapel</h2><p>Loading Chapel...</p></> : null;
     }
     if (chapelError) return <><h2 className="meal-period-title">Chapel</h2><p>Chapel events unavailable.</p></>;
     if (!chapelData || chapelData.length === 0) return <><h2 className="meal-period-title">Chapel</h2><p>No chapel events listed.</p></>;
@@ -778,7 +782,7 @@ function App() {
     const allUpcomingEvents = chapelData
       .map(event => ({ ...event, dateObject: parseChapelDate(event.time) }))
       .filter(event => event.dateObject && event.dateObject > new Date());
-    
+
     const remainingCredits = allUpcomingEvents.length;
 
     const eventsToDisplay = allUpcomingEvents
@@ -819,43 +823,47 @@ function App() {
           <GlassSurface ref={mealCardRef} borderRadius={20} className="meal-card" distortionScale={-80}>
             <div className="card-content" ref={mealContentRef}>
               {isSettingsVisible ? (
-                  <SettingsPage 
-                    ref={settingsContentRef} 
-                    onBack={toggleSettingsPage} 
-                    isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(!isChapelVisible)} 
-                    isCreditsVisible={isCreditsVisible} onToggleCreditsVisible={() => setIsCreditsVisible(!isCreditsVisible)}
-                    showMealHours={showMealHours} onToggleShowMealHours={() => setShowMealHours(!showMealHours)}
-                    isRatingVisible={isRatingVisible} onToggleRatingVisible={() => setIsRatingVisible(!isRatingVisible)}
-                    isDayPickerVisible={isDayPickerVisible} onToggleDayPicker={() => setIsDayPickerVisible(!isDayPickerVisible)}
-                    isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)} 
-                    isSarcasticAi={isSarcasticAi} onToggleSarcasticAi={() => setIsSarcasticAi(!isSarcasticAi)} 
-                    silkAngle1={silkAngle1} setSilkAngle1={setSilkAngle1} 
-                    silkAngle2={silkAngle2} setSilkAngle2={setSilkAngle2} 
-                    silkSaturation={silkSaturation} setSilkSaturation={setSilkSaturation} 
-                    silkLightness={silkLightness} setSilkLightness={setSilkLightness}
-                    triggerCardResize={triggerCardResize} />
-              ) : ( <div ref={pageContentRef}>{renderCardContent()}</div> )}
+                <SettingsPage
+                  ref={settingsContentRef}
+                  onBack={toggleSettingsPage}
+                  isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(!isChapelVisible)}
+                  isCreditsVisible={isCreditsVisible} onToggleCreditsVisible={() => setIsCreditsVisible(!isCreditsVisible)}
+                  showMealHours={showMealHours} onToggleShowMealHours={() => setShowMealHours(!showMealHours)}
+                  isRatingVisible={isRatingVisible}
+                  onToggleRatingVisible={() => setIsRatingVisible(v => !v)}
+                  showRatingCount={showRatingCount}
+                  onToggleShowRatingCount={() => setShowRatingCount(v => !v)}
+                  isDayPickerVisible={isDayPickerVisible}
+                  onToggleDayPicker={() => setIsDayPickerVisible(!isDayPickerVisible)}
+                  isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)}
+                  isSarcasticAi={isSarcasticAi} onToggleSarcasticAi={() => setIsSarcasticAi(!isSarcasticAi)}
+                  silkAngle1={silkAngle1} setSilkAngle1={setSilkAngle1}
+                  silkAngle2={silkAngle2} setSilkAngle2={setSilkAngle2}
+                  silkSaturation={silkSaturation} setSilkSaturation={setSilkSaturation}
+                  silkLightness={silkLightness} setSilkLightness={setSilkLightness}
+                  triggerCardResize={triggerCardResize} />
+              ) : (<div ref={pageContentRef}>{renderCardContent()}</div>)}
               {!isSettingsVisible && (
                 <div className="bottom-controls-container">
-                    {isDayPickerVisible && (
-                        <div className="day-picker-container">
-                            <button className="day-picker-toggle" onClick={() => setIsDayPickerOpen(!isDayPickerOpen)}>
-                                <span>{selectedDay}</span>
-                                <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg" className={`chevron-icon ${isDayPickerOpen ? 'open' : ''}`}><path d="M1.41 0.59L6 5.17L10.59 0.59L12 2L6 8L0 2L1.41 0.59Z" fill="white"/></svg>
-                            </button>
-                            <div className={`day-options-container ${isDayPickerOpen ? 'open' : ''}`}>
-                                <button className={`day-option-button ${selectedDay === 'Today' ? 'active' : ''}`} onClick={() => handleDaySelect('Today')}>Today</button>
-                                {futureDays.map(day => (
-                                    <button key={day} className={`day-option-button ${selectedDay === day ? 'active' : ''}`} onClick={() => handleDaySelect(day)}>{day}</button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                    <div className="inner-nav-bar">
-                      <button className={`inner-nav-button ${activePage === 'breakfast' ? 'active' : ''}`} onClick={() => setActivePage('breakfast')}>Breakfast</button>
-                      <button className={`inner-nav-button ${activePage === 'lunch' ? 'active' : ''}`} onClick={() => setActivePage('lunch')}>Lunch</button>
-                      <button className={`inner-nav-button ${activePage === 'dinner' ? 'active' : ''}`} onClick={() => setActivePage('dinner')}>Dinner</button>
+                  {isDayPickerVisible && (
+                    <div className="day-picker-container">
+                      <button className="day-picker-toggle" onClick={() => setIsDayPickerOpen(!isDayPickerOpen)}>
+                        <span>{selectedDay}</span>
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg" className={`chevron-icon ${isDayPickerOpen ? 'open' : ''}`}><path d="M1.41 0.59L6 5.17L10.59 0.59L12 2L6 8L0 2L1.41 0.59Z" fill="white" /></svg>
+                      </button>
+                      <div className={`day-options-container ${isDayPickerOpen ? 'open' : ''}`}>
+                        <button className={`day-option-button ${selectedDay === 'Today' ? 'active' : ''}`} onClick={() => handleDaySelect('Today')}>Today</button>
+                        {futureDays.map(day => (
+                          <button key={day} className={`day-option-button ${selectedDay === day ? 'active' : ''}`} onClick={() => handleDaySelect(day)}>{day}</button>
+                        ))}
+                      </div>
                     </div>
+                  )}
+                  <div className="inner-nav-bar">
+                    <button className={`inner-nav-button ${activePage === 'breakfast' ? 'active' : ''}`} onClick={() => setActivePage('breakfast')}>Breakfast</button>
+                    <button className={`inner-nav-button ${activePage === 'lunch' ? 'active' : ''}`} onClick={() => setActivePage('lunch')}>Lunch</button>
+                    <button className={`inner-nav-button ${activePage === 'dinner' ? 'active' : ''}`} onClick={() => setActivePage('dinner')}>Dinner</button>
+                  </div>
                 </div>
               )}
             </div>
@@ -863,12 +871,12 @@ function App() {
           <GlassSurface ref={chapelCardRef} borderRadius={20} className="chapel-card"><div className="card-content chapel-card-wrapper" ref={chapelContentRef}>{renderChapelContent()}</div></GlassSurface>
         </div>
       </div>
-      
+
       {isFeedbackVisible && (
         <div className="feedback-modal-backdrop">
-           <GlassSurface borderRadius={20} className="feedback-modal-container">
-              <FeedbackModal onClose={toggleFeedbackModal} consoleLogs={consoleLogs} showToast={showToast} />
-           </GlassSurface>
+          <GlassSurface borderRadius={20} className="feedback-modal-container">
+            <FeedbackModal onClose={toggleFeedbackModal} consoleLogs={consoleLogs} showToast={showToast} />
+          </GlassSurface>
         </div>
       )}
     </div>
