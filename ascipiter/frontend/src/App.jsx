@@ -9,6 +9,7 @@ import MealItem from './components/MealItem';
 import AiResponse from './components/AiResponse';
 import ToggleSwitch from './components/ToggleSwitch';
 import ElasticSlider from './components/ElasticSlider';
+import Aurora from './components/Aurora';
 import FeedbackModal from './components/Feedback.jsx';
 import { getAnonymousId } from './utils/anonymousId';
 
@@ -186,7 +187,9 @@ const UnifiedColorControl = ({
   lightness1, setLightness1,
   saturation2, setSaturation2,
   lightness2, setLightness2,
-  color1, color2,
+  saturation3, setSaturation3,
+  lightness3, setLightness3,
+  color1, color2, color3,
   triggerResize
 }) => {
   const [expanded, setExpanded] = useState(false);
@@ -204,6 +207,8 @@ const UnifiedColorControl = ({
   const SatR_1 = <HighSatIcon idSuffix="1" />;
   const SatL_2 = <LowSatIcon idSuffix="2" />;
   const SatR_2 = <HighSatIcon idSuffix="2" />;
+  const SatL_3 = <LowSatIcon idSuffix="3" />;
+  const SatR_3 = <HighSatIcon idSuffix="3" />;
   const LitL = <DarkIcon />;
   const LitR = <LightIcon />;
 
@@ -211,10 +216,12 @@ const UnifiedColorControl = ({
   const handleMasterSat = (v) => {
     if (setSaturation1) setSaturation1(v);
     if (setSaturation2) setSaturation2(v);
+    if (setSaturation3) setSaturation3(v);
   };
   const handleMasterLit = (v) => {
     if (setLightness1) setLightness1(v);
     if (setLightness2) setLightness2(v);
+    if (setLightness3) setLightness3(v);
   };
 
   useLayoutEffect(() => {
@@ -297,7 +304,36 @@ const UnifiedColorControl = ({
         {/* EXPANDED */}
         <div ref={individualRef} style={{ flexDirection: 'column', gap: '24px', padding: '24px 0', opacity: 0, display: 'none' }}>
 
-          {/* Color 2 Group (Top/First) */}
+          {/* Color 3 Group (Top/First if present) */}
+          {color3 && (
+            <>
+              <div style={{ position: 'relative', padding: '0 45px', width: '100%', boxSizing: 'border-box' }}>
+                <div style={{
+                  position: 'absolute', left: '12px', top: '-10px',
+                  width: '32px', height: '32px',
+                  borderRadius: '50%', backgroundColor: color3,
+                  border: '1px solid rgba(255,255,255,0.3)'
+                }}></div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <label style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '4px', textAlign: 'center' }}>Saturation</label>
+                    <div style={{ width: '100%' }}>
+                      <ElasticSlider key={`sat3-${layoutKey}`} value={saturation3} onChange={setSaturation3} maxValue={100} leftIcon={SatL_3} rightIcon={SatR_3} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <label style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '4px', textAlign: 'center' }}>Lightness</label>
+                    <div style={{ width: '100%' }}>
+                      <ElasticSlider key={`lit3-${layoutKey}`} value={lightness3} onChange={setLightness3} maxValue={100} leftIcon={LitL} rightIcon={LitR} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style={{ width: '100%', height: '1px', backgroundColor: 'rgba(255,255,255,0.1)' }}></div>
+            </>
+          )}
+
+          {/* Color 2 Group */}
           {/* Symmetrical padding (45px left, 45px right) centers the content. Absolute dot sits in the left padding. */}
           <div style={{ position: 'relative', padding: '0 45px', width: '100%', boxSizing: 'border-box' }}>
             <div style={{
@@ -357,10 +393,14 @@ const UnifiedColorControl = ({
 const AdvancedColorPicker = ({
   angle1, setAngle1,
   angle2, setAngle2,
+  angle3, setAngle3,
   saturation1, setSaturation1,
   lightness1, setLightness1,
   saturation2, setSaturation2,
   lightness2, setLightness2,
+  saturation3, setSaturation3,
+  lightness3, setLightness3,
+  backgroundType, setBackgroundType,
   triggerResize
 }) => {
   const pickerRef = useRef(null);
@@ -395,15 +435,25 @@ const AdvancedColorPicker = ({
 
     if (handleId) {
       if (handleId === 'handle1') setAngle1(angle);
-      else setAngle2(angle);
+      else if (handleId === 'handle2') setAngle2(angle);
+      else if (handleId === 'handle3') setAngle3(angle);
     } else {
       const pos1 = angleToPos(angle1);
       const pos2 = angleToPos(angle2);
       const clickPos = { x: (x / rect.width) * 100, y: (y / rect.height) * 100 };
       const dist1 = Math.hypot(clickPos.x - pos1.x, clickPos.y - pos1.y);
       const dist2 = Math.hypot(clickPos.x - pos2.x, clickPos.y - pos2.y);
-      if (dist1 < dist2) setAngle1(angle);
-      else setAngle2(angle);
+
+      if (backgroundType === 'aurora') {
+        const pos3 = angleToPos(angle3);
+        const dist3 = Math.hypot(clickPos.x - pos3.x, clickPos.y - pos3.y);
+        if (dist1 < dist2 && dist1 < dist3) setAngle1(angle);
+        else if (dist2 < dist3) setAngle2(angle);
+        else setAngle3(angle);
+      } else {
+        if (dist1 < dist2) setAngle1(angle);
+        else setAngle2(angle);
+      }
     }
   };
 
@@ -435,14 +485,15 @@ const AdvancedColorPicker = ({
 
   const handle1Pos = angleToPos(angle1);
   const handle2Pos = angleToPos(angle2);
+  const handle3Pos = angleToPos(angle3 || 0);
 
   const gradientPresets = useMemo(() => [
-    { name: 'Twilight', c1: '#756880ff', c2: '#ADD8E6' },
-    { name: 'Sunrise', c1: '#ff7e5f', c2: '#feb47b' },
-    { name: 'Ocean', c1: '#00c6ff', c2: '#0072ff' },
-    { name: 'Mango', c1: '#22c1c3', c2: '#fdbb2d' },
-    { name: 'Rose', c1: '#e55d87', c2: '#5fc3e4' },
-    { name: 'Night', c1: '#2c3e50', c2: '#4ca1af' },
+    { name: 'Twilight', c1: '#756880ff', c2: '#ADD8E6', c3: '#FFB6C1' },
+    { name: 'Sunrise', c1: '#ff7e5f', c2: '#feb47b', c3: '#FFD700' },
+    { name: 'Ocean', c1: '#00c6ff', c2: '#0072ff', c3: '#00008B' },
+    { name: 'Mango', c1: '#22c1c3', c2: '#fdbb2d', c3: '#FF4500' },
+    { name: 'Rose', c1: '#e55d87', c2: '#5fc3e4', c3: '#FF69B4' },
+    { name: 'Night', c1: '#2c3e50', c2: '#4ca1af', c3: '#191970' },
   ], []);
 
   const hexToHslAngle = (hex) => {
@@ -470,17 +521,24 @@ const AdvancedColorPicker = ({
   const handlePresetSelect = (preset) => {
     setAngle1(hexToHslAngle(preset.c1));
     setAngle2(hexToHslAngle(preset.c2));
+    if (setAngle3 && preset.c3) setAngle3(hexToHslAngle(preset.c3));
     setSaturation1(80); setLightness1(70);
     if (setSaturation2) setSaturation2(80);
     if (setLightness2) setLightness2(70);
+    if (setSaturation3) setSaturation3(80);
+    if (setLightness3) setLightness3(70);
   };
 
   const handleDefault = () => {
     setAngle1(258); // Dark Purple
     setAngle2(238); // Light Purple
+    if (setAngle3) setAngle3(0);
     setSaturation1(5); setLightness1(70);
     if (setSaturation2) setSaturation2(5);
     if (setLightness2) setLightness2(70);
+    if (setSaturation3) setSaturation3(5);
+    if (setLightness3) setLightness3(70);
+    if (setBackgroundType) setBackgroundType('silk');
   };
 
   return (
@@ -495,6 +553,9 @@ const AdvancedColorPicker = ({
         <div ref={pickerRef} className="picker-area" onClick={(e) => handleInteraction(e, null)}>
           <div className="picker-handle" style={{ left: `${handle1Pos.x}%`, top: `${handle1Pos.y}%`, backgroundColor: angleToHsl(angle1, saturation1, lightness1) }} onMouseDown={(e) => handleStart(e, 'handle1')} onTouchStart={(e) => handleStart(e, 'handle1')} />
           <div className="picker-handle" style={{ left: `${handle2Pos.x}%`, top: `${handle2Pos.y}%`, backgroundColor: angleToHsl(angle2, saturation2, lightness2) }} onMouseDown={(e) => handleStart(e, 'handle2')} onTouchStart={(e) => handleStart(e, 'handle2')} />
+          {backgroundType === 'aurora' && (
+            <div className="picker-handle" style={{ left: `${handle3Pos.x}%`, top: `${handle3Pos.y}%`, backgroundColor: angleToHsl(angle3, saturation3, lightness3) }} onMouseDown={(e) => handleStart(e, 'handle3')} onTouchStart={(e) => handleStart(e, 'handle3')} />
+          )}
         </div>
       </div>
       <div className="sliders-wrapper">
@@ -503,8 +564,11 @@ const AdvancedColorPicker = ({
           lightness1={lightness1} setLightness1={setLightness1}
           saturation2={saturation2} setSaturation2={setSaturation2}
           lightness2={lightness2} setLightness2={setLightness2}
+          saturation3={backgroundType === 'aurora' ? saturation3 : null} setSaturation3={backgroundType === 'aurora' ? setSaturation3 : null}
+          lightness3={backgroundType === 'aurora' ? lightness3 : null} setLightness3={backgroundType === 'aurora' ? setLightness3 : null}
           color1={angleToHsl(angle1, saturation1, lightness1)}
           color2={angleToHsl(angle2, saturation2, lightness2)}
+          color3={backgroundType === 'aurora' ? angleToHsl(angle3, saturation3, lightness3) : null}
           triggerResize={triggerResize}
         />
       </div>
@@ -525,10 +589,14 @@ const SettingsPage = React.forwardRef(({
   isSarcasticAi, onToggleSarcasticAi,
   silkAngle1, setSilkAngle1,
   silkAngle2, setSilkAngle2,
+  silkAngle3, setSilkAngle3,
   silkSaturation1, setSilkSaturation1,
   silkLightness1, setSilkLightness1,
   silkSaturation2, setSilkSaturation2,
   silkLightness2, setSilkLightness2,
+  silkSaturation3, setSilkSaturation3,
+  silkLightness3, setSilkLightness3,
+  backgroundType, setBackgroundType,
   isHighContrast, onToggleHighContrast,
   triggerCardResize
 }, ref) => {
@@ -585,18 +653,38 @@ const SettingsPage = React.forwardRef(({
           <div className="appearance-settings">
             <h3>Appearance</h3>
             <p>Change the background by dragging the bubbles.</p>
+
+            <div className="background-selector">
+              <label htmlFor="background-type-select" style={{ fontSize: '0.9rem', marginBottom: '8px', display: 'block', opacity: 0.8 }}>Background Style</label>
+              <select
+                id="background-type-select"
+                className="background-type-dropdown"
+                value={backgroundType}
+                onChange={(e) => setBackgroundType(e.target.value)}
+              >
+                <option value="silk">Silk</option>
+                <option value="aurora">Aurora</option>
+              </select>
+            </div>
+
             <AdvancedColorPicker
               angle1={silkAngle1} setAngle1={setSilkAngle1}
               angle2={silkAngle2} setAngle2={setSilkAngle2}
+              angle3={silkAngle3} setAngle3={setSilkAngle3}
               saturation1={silkSaturation1} setSaturation1={setSilkSaturation1}
               lightness1={silkLightness1} setLightness1={setSilkLightness1}
               saturation2={silkSaturation2} setSaturation2={setSilkSaturation2}
               lightness2={silkLightness2} setLightness2={setSilkLightness2}
+              saturation3={silkSaturation3} setSaturation3={setSilkSaturation3}
+              lightness3={silkLightness3} setLightness3={setSilkLightness3}
+              backgroundType={backgroundType} setBackgroundType={setBackgroundType}
               triggerResize={triggerCardResize}
             />
-            <div style={{ marginTop: '20px' }}>
-              <ToggleSwitch label="High Contrast Mode" isToggled={isHighContrast} onToggle={onToggleHighContrast} />
-            </div>
+            {backgroundType === 'silk' && (
+              <div style={{ marginTop: '20px' }}>
+                <ToggleSwitch label="High Contrast Mode" isToggled={isHighContrast} onToggle={onToggleHighContrast} />
+              </div>
+            )}
           </div>
         );
       case 'About':
@@ -665,12 +753,16 @@ function App() {
 
   const [silkAngle1, setSilkAngle1] = useState(() => parseFloat(getCookie('silkAngle1')) || 258);
   const [silkAngle2, setSilkAngle2] = useState(() => parseFloat(getCookie('silkAngle2')) || 238);
+  const [silkAngle3, setSilkAngle3] = useState(() => parseFloat(getCookie('silkAngle3')) || 0);
+  const [backgroundType, setBackgroundType] = useState(() => getCookie('backgroundType') || 'silk');
 
   // Split saturation and lightness for each color
   const [silkSaturation1, setSilkSaturation1] = useState(() => parseFloat(getCookie('silkSaturation1')) || 5);
   const [silkLightness1, setSilkLightness1] = useState(() => parseFloat(getCookie('silkLightness1')) || 70);
   const [silkSaturation2, setSilkSaturation2] = useState(() => parseFloat(getCookie('silkSaturation2')) || 5);
   const [silkLightness2, setSilkLightness2] = useState(() => parseFloat(getCookie('silkLightness2')) || 70);
+  const [silkSaturation3, setSilkSaturation3] = useState(() => parseFloat(getCookie('silkSaturation3')) || 5);
+  const [silkLightness3, setSilkLightness3] = useState(() => parseFloat(getCookie('silkLightness3')) || 70);
 
   const [isHighContrast, setIsHighContrast] = useState(() => getCookie('isHighContrast') === 'true');
 
@@ -714,11 +806,15 @@ function App() {
 
   useEffect(() => { setCookie('silkAngle1', silkAngle1, 365); }, [silkAngle1]);
   useEffect(() => { setCookie('silkAngle2', silkAngle2, 365); }, [silkAngle2]);
+  useEffect(() => { setCookie('silkAngle3', silkAngle3, 365); }, [silkAngle3]);
+  useEffect(() => { setCookie('backgroundType', backgroundType, 365); }, [backgroundType]);
 
   useEffect(() => { setCookie('silkSaturation1', silkSaturation1, 365); }, [silkSaturation1]);
   useEffect(() => { setCookie('silkLightness1', silkLightness1, 365); }, [silkLightness1]);
   useEffect(() => { setCookie('silkSaturation2', silkSaturation2, 365); }, [silkSaturation2]);
   useEffect(() => { setCookie('silkLightness2', silkLightness2, 365); }, [silkLightness2]);
+  useEffect(() => { setCookie('silkSaturation3', silkSaturation3, 365); }, [silkSaturation3]);
+  useEffect(() => { setCookie('silkLightness3', silkLightness3, 365); }, [silkLightness3]);
 
   useEffect(() => { setCookie('isHighContrast', isHighContrast, 365); }, [isHighContrast]);
 
@@ -957,6 +1053,32 @@ function App() {
     setIsDayPickerOpen(false);
   };
 
+  const hexToRgb = (hex) => {
+    // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+    var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    hex = hex.replace(shorthandRegex, function (m, r, g, b) {
+      return r + r + g + g + b + b;
+    });
+
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
+  }
+
+  // Helper to convert HSL to Hex for Aurora
+  const hslToHex = (h, s, l) => {
+    l /= 100;
+    const a = s * Math.min(l, 1 - l) / 100;
+    const f = n => {
+      const k = (n + h / 30) % 12;
+      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * color).toString(16).padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  };
 
   const renderCardContent = () => {
     if (isMenuLoading) {
@@ -1043,7 +1165,27 @@ function App() {
   return (
     <div className="App">
       <Toast message={toast.message} show={toast.show} />
-      <div className="silk-container"><Silk speed={5} scale={1} color1={silkColor1} color2={silkColor2} noiseIntensity={1.5} rotation={0} /></div>
+      <div className="silk-container">
+        {backgroundType === 'silk' ? (
+          <Silk
+            speed={5} scale={1}
+            color1={silkColor1}
+            color2={silkColor2}
+            noiseIntensity={1.5} rotation={0}
+          />
+        ) : (
+          <Aurora
+            colorStops={[
+              hslToHex(silkAngle1, silkSaturation1, silkLightness1),
+              hslToHex(silkAngle2, silkSaturation2, silkLightness2),
+              hslToHex(silkAngle3, silkSaturation3, silkLightness3)
+            ]}
+            blend={0.4}
+            amplitude={1.2}
+            speed={0.3}
+          />
+        )}
+      </div>
       <div className="content-area">
         <CardNav logo={logo} logoAlt="Company Logo" items={navItemsTemplate} menuColor="#fff" buttonBgColor="transparent" buttonTextColor="#fff" ease="power3.out" isGlass={true} glassBlur={15} glassTransparency={0.05} distortionScale={-80} ctaButtonText="--°F" isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(!isChapelVisible)} isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)} />
         <div className="card-container">
@@ -1063,10 +1205,14 @@ function App() {
                   isSarcasticAi={isSarcasticAi} onToggleSarcasticAi={() => setIsSarcasticAi(v => !v)}
                   silkAngle1={silkAngle1} setSilkAngle1={setSilkAngle1}
                   silkAngle2={silkAngle2} setSilkAngle2={setSilkAngle2}
+                  silkAngle3={silkAngle3} setSilkAngle3={setSilkAngle3}
                   silkSaturation1={silkSaturation1} setSilkSaturation1={setSilkSaturation1}
                   silkLightness1={silkLightness1} setSilkLightness1={setSilkLightness1}
                   silkSaturation2={silkSaturation2} setSilkSaturation2={setSilkSaturation2}
                   silkLightness2={silkLightness2} setSilkLightness2={setSilkLightness2}
+                  silkSaturation3={silkSaturation3} setSilkSaturation3={setSilkSaturation3}
+                  silkLightness3={silkLightness3} setSilkLightness3={setSilkLightness3}
+                  backgroundType={backgroundType} setBackgroundType={setBackgroundType}
                   isHighContrast={isHighContrast} onToggleHighContrast={() => setIsHighContrast(v => !v)}
                   triggerCardResize={triggerCardResize}
                 />) : (<div ref={pageContentRef}>{renderCardContent()}</div>)}
