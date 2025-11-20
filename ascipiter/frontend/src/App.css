@@ -1181,18 +1181,66 @@ html,
 }
 
 /* Specific styles for the Announcement Toast (Top of screen) */
+/* Specific styles for the Announcement Toast (Glass Style) */
 .toast-notification.announcement {
+  /* Layout & Positioning */
   position: relative !important;
-  /* Override fixed */
   top: auto !important;
   left: auto !important;
   bottom: auto !important;
   transform: none !important;
   margin: 0 !important;
   z-index: 100;
-  /* Ensure it is visible immediately so the wrapper handles the fade */
   opacity: 1 !important;
   visibility: visible !important;
+
+  /* Padding - Increased right padding to 60px to prevent X overlap */
+  padding: 16px 60px 16px 24px;
+
+  /* Glass Styling */
+  background-color: rgba(255, 255, 255, 0.1);
+  /* Low opacity white */
+  backdrop-filter: blur(20px);
+  /* Heavy blur for the glass effect */
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  /* Distinct glass border */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  /* Soft shadow for depth */
+  border-radius: 20px;
+  /* Matches your other cards */
+
+  /* Text Styling */
+  color: white;
+  max-width: 85%;
+  /* Prevents it from touching screen edges on mobile */
+  width: fit-content;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* Ensure the X button is positioned correctly within the new glass card */
+.announcement-close {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  /* Fixed distance from right edge */
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.announcement-close:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 .toast-notification.announcement.show {
