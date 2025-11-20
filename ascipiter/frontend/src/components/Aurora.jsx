@@ -200,10 +200,14 @@ export default function Aurora(props) {
             if (gl && gl.canvas) {
                 gl.canvas.removeEventListener('webglcontextlost', handleContextLost);
             }
+
+            // Safely lose context to prevent browser limit errors on multiple switches
+            const loseCtx = gl.getExtension('WEBGL_lose_context');
+            if (loseCtx) loseCtx.loseContext();
+
             if (ctn && gl.canvas.parentNode === ctn) {
                 ctn.removeChild(gl.canvas);
             }
-            // Removed explicit loseContext() to prevent "Context Lost" warnings and potential instability on Edge
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [amplitude]);

@@ -536,7 +536,10 @@ const AdvancedColorPicker = ({
     setAngle1(hexToHslAngle(preset.c1));
     setAngle2(hexToHslAngle(preset.c2));
     if (setAngle3 && preset.c3) setAngle3(hexToHslAngle(preset.c3));
-    setSaturation1(80); setLightness1(70);
+
+    // Ensure setLightness1 and others exist before calling
+    if (setSaturation1) setSaturation1(80);
+    if (setLightness1) setLightness1(70);
     if (setSaturation2) setSaturation2(80);
     if (setLightness2) setLightness2(70);
     if (setSaturation3) setSaturation3(80);
@@ -547,11 +550,14 @@ const AdvancedColorPicker = ({
     setAngle1(258); // Dark Purple
     setAngle2(238); // Light Purple
     if (setAngle3) setAngle3(0);
-    setSaturation1(5); setLightness1(70);
+
+    if (setSaturation1) setSaturation1(5);
+    if (setLightness1) setLightness1(70);
     if (setSaturation2) setSaturation2(5);
     if (setLightness2) setLightness2(70);
     if (setSaturation3) setSaturation3(5);
     if (setLightness3) setLightness3(70);
+
     if (setBackgroundType) setBackgroundType('silk');
   };
 
@@ -685,19 +691,19 @@ const SettingsPage = React.forwardRef(({
                 <div className={`background-dropdown-options ${isBackgroundDropdownOpen ? 'open' : ''}`}>
                   <button
                     className={`background-option ${backgroundType === 'silk' ? 'active' : ''}`}
-                    onClick={() => { setBackgroundType('silk'); }}
+                    onClick={() => { setBackgroundType('silk'); setIsBackgroundDropdownOpen(false); }}
                   >
                     Silk
                   </button>
                   <button
                     className={`background-option ${backgroundType === 'aurora' ? 'active' : ''}`}
-                    onClick={() => { setBackgroundType('aurora'); }}
+                    onClick={() => { setBackgroundType('aurora'); setIsBackgroundDropdownOpen(false); }}
                   >
                     Aurora
                   </button>
                   <button
                     className={`background-option ${backgroundType === 'gradient' ? 'active' : ''}`}
-                    onClick={() => { setBackgroundType('gradient'); }}
+                    onClick={() => { setBackgroundType('gradient'); setIsBackgroundDropdownOpen(false); }}
                   >
                     Gradient
                   </button>
@@ -712,9 +718,9 @@ const SettingsPage = React.forwardRef(({
               saturation1={silkSaturation1} setSaturation1={setSilkSaturation1}
               lightness1={silkLightness1} setLightness1={setSilkLightness1}
               saturation2={silkSaturation2} setSaturation2={setSilkSaturation2}
-              lightness2={silkLightness2} setSilkLightness2={setSilkLightness2}
+              lightness2={silkLightness2} setLightness2={setSilkLightness2}
               saturation3={silkSaturation3} setSaturation3={setSilkSaturation3}
-              lightness3={silkLightness3} setSilkLightness3={setSilkLightness3}
+              lightness3={silkLightness3} setLightness3={setSilkLightness3}
               backgroundType={backgroundType} setBackgroundType={setBackgroundType}
               triggerResize={triggerCardResize}
             />
@@ -805,14 +811,10 @@ function App() {
   const [isHighContrast, setIsHighContrast] = useState(() => getCookie('isHighContrast') === 'true');
   const [isNonVegMode, setIsNonVegMode] = useState(() => getCookie('isNonVegMode') === 'true');
 
-  const [isTransitioningBackground, setIsTransitioningBackground] = useState(false);
-
   // --- WebGL Context Loss Handling ---
   const handleContextLost = useCallback((event) => {
-    event && event.preventDefault();
-    console.error("WebGL Context Lost! Switching to Gradient background and reloading.");
-    setCookie('backgroundType', 'gradient', 365); // Force save to cookie immediately
-    window.location.reload();
+    if (event) event.preventDefault();
+    console.warn("WebGL Context Lost encountered. Attempting to recover implicitly.");
   }, []);
 
   // Generate a static background style based on current colors
@@ -1065,7 +1067,6 @@ function App() {
     fetchWeeklyMenu();
 
     return () => { isMounted = false; };
-    return () => { isMounted = false; };
   }, [API_BASE_URL, isNonVegMode]);
 
   useLayoutEffect(() => {
@@ -1272,17 +1273,7 @@ function App() {
 
   const handleBackgroundChange = (newType) => {
     if (newType === backgroundType) return;
-    setIsBackgroundDropdownOpen(false);
-    // Start transition: unmount current background
-    setIsTransitioningBackground(true);
-    // Wait for cleanup (100ms) then set new type
-    setTimeout(() => {
-      setBackgroundType(newType);
-      // Wait a bit more for state to settle before remounting new background
-      setTimeout(() => {
-        setIsTransitioningBackground(false);
-      }, 50);
-    }, 100);
+    setBackgroundType(newType);
   };
 
   return (
@@ -1290,33 +1281,29 @@ function App() {
       <Toast message={toast.message} show={toast.show} />
 
       <div className="silk-container">
-        {isTransitioningBackground ? (
+        {backgroundType === 'gradient' ? (
           <div className="static-background" style={{ width: '100%', height: '100%', ...staticBackgroundStyle }} />
         ) : (
-          backgroundType === 'gradient' ? (
-            <div className="static-background" style={{ width: '100%', height: '100%', ...staticBackgroundStyle }} />
+          backgroundType === 'silk' ? (
+            <Silk
+              speed={5} scale={1}
+              color1={silkColor1}
+              color2={silkColor2}
+              noiseIntensity={1.5} rotation={0}
+              onContextLost={handleContextLost}
+            />
           ) : (
-            backgroundType === 'silk' ? (
-              <Silk
-                speed={5} scale={1}
-                color1={silkColor1}
-                color2={silkColor2}
-                noiseIntensity={1.5} rotation={0}
-                onContextLost={handleContextLost}
-              />
-            ) : (
-              <Aurora
-                colorStops={[
-                  hslToHex(silkAngle1, silkSaturation1, silkLightness1),
-                  hslToHex(silkAngle2, silkSaturation2, silkLightness2),
-                  hslToHex(silkAngle3, silkSaturation3, silkLightness3)
-                ]}
-                blend={0.4}
-                amplitude={1.2}
-                speed={0.3}
-                onContextLost={handleContextLost}
-              />
-            )
+            <Aurora
+              colorStops={[
+                hslToHex(silkAngle1, silkSaturation1, silkLightness1),
+                hslToHex(silkAngle2, silkSaturation2, silkLightness2),
+                hslToHex(silkAngle3, silkSaturation3, silkLightness3)
+              ]}
+              blend={0.4}
+              amplitude={1.2}
+              speed={0.3}
+              onContextLost={handleContextLost}
+            />
           )
         )}
       </div>

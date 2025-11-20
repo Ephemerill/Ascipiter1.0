@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unknown-property */
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { forwardRef, useRef, useMemo, useLayoutEffect } from 'react';
+import { forwardRef, useRef, useMemo, useLayoutEffect, useEffect } from 'react';
 import { Color } from 'three';
 
 const vertexShader = `
@@ -91,6 +91,56 @@ const SilkPlane = forwardRef(function SilkPlane({ uniforms }, ref) {
 });
 SilkPlane.displayName = 'SilkPlane';
 
+// --- Component to handle Event Listener Cleanup ---
+const ContextLifecycle = ({ onContextLost }) => {
+  const { gl } = useThree();
+
+  useEffect(() => {
+    const handleContextLost = (event) => {
+      event.preventDefault();
+      if (onContextLost) onContextLost(event);
+    };
+
+    const canvas = gl.domElement;
+    canvas.addEventListener('webglcontextlost', handleContextLost, false);
+
+    return () => {
+      canvas.removeEventListener('webglcontextlost', handleContextLost);
+    };
+  }, [gl, onContextLost]);
+
+  return null;
+};
+
+// --- FIXED ManualDispose ---
+// Safely checks for the extension before trying to use it.
+const ManualDispose = () => {
+  const { gl } = useThree();
+  useEffect(() => {
+    return () => {
+      try {
+        // We only attempt to lose context if the extension is explicitly supported
+        // by the current browser/GPU context.
+        const context = gl.getContext();
+        if (context) {
+          const ext = context.getExtension('WEBGL_lose_context');
+          if (ext) {
+            ext.loseContext();
+          }
+        }
+      } catch (e) {
+        // Silently fail if context access fails during unmount
+      }
+
+      // Always dispose the renderer to free CPU resources
+      if (gl && typeof gl.dispose === 'function') {
+        gl.dispose();
+      }
+    };
+  }, [gl]);
+  return null;
+};
+
 const Silk = ({ speed = 5, scale = 1, color1 = '#7B7481', color2 = '#ADD8E6', noiseIntensity = 1.5, rotation = 0, onContextLost }) => {
   const meshRef = useRef();
 
@@ -104,15 +154,11 @@ const Silk = ({ speed = 5, scale = 1, color1 = '#7B7481', color2 = '#ADD8E6', no
       uRotation: { value: rotation },
       uTime: { value: 0 }
     }),
-    // We only want this to run once on initialization
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
-  // This effect hook will run ONLY when the color props change
   useLayoutEffect(() => {
     if (meshRef.current) {
-      // Imperatively update the shader's color uniforms
       meshRef.current.material.uniforms.uColor1.value.set(color1);
       meshRef.current.material.uniforms.uColor2.value.set(color2);
     }
@@ -120,24 +166,18 @@ const Silk = ({ speed = 5, scale = 1, color1 = '#7B7481', color2 = '#ADD8E6', no
 
   return (
     <Canvas
-      dpr={[1, 1.5]} // Cap DPR to 1.5 to save memory on high-density screens
+      dpr={[1, 1.5]}
       frameloop="always"
-      // Optimize WebGL context creation
       gl={{
-        preserveDrawingBuffer: true, // Needed for html2canvas
-        antialias: false, // Disable antialias for performance (shader is smooth anyway)
-        stencil: false,   // No stencil buffer needed
-        depth: false,     // No depth buffer needed for a 2D plane
-        powerPreference: "high-performance" // Hint to use discrete GPU
-      }}
-      onCreated={({ gl }) => {
-        const handleContextLost = (event) => {
-          event.preventDefault();
-          if (onContextLost) onContextLost(event);
-        };
-        gl.domElement.addEventListener('webglcontextlost', handleContextLost, false);
+        preserveDrawingBuffer: true,
+        antialias: false,
+        stencil: false,
+        depth: false,
+        powerPreference: "high-performance"
       }}
     >
+      <ContextLifecycle onContextLost={onContextLost} />
+      <ManualDispose />
       <SilkPlane ref={meshRef} uniforms={uniforms} />
     </Canvas>
   );
