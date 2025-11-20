@@ -1182,20 +1182,17 @@ html,
 
 /* Specific styles for the Announcement Toast (Top of screen) */
 .toast-notification.announcement {
-  bottom: auto;
-  top: 2rem;
-  /* Moves it to the top */
-  transform: translate(-50%, -20px);
-  padding: 12px 45px 12px 20px;
-  /* Extra right padding for X button */
-  background-color: rgba(30, 30, 30, 0.95);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  border-radius: 12px;
-  max-width: 90%;
-  width: max-content;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  position: relative !important;
+  /* Override fixed */
+  top: auto !important;
+  left: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  z-index: 100;
+  /* Ensure it is visible immediately so the wrapper handles the fade */
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .toast-notification.announcement.show {
@@ -1610,6 +1607,41 @@ html,
 .background-option:hover {
   background-color: rgba(255, 255, 255, 0.1);
   color: white;
+}
+
+.announcement-spacer {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.4s ease,
+    margin-top 0.5s ease,
+    margin-bottom 0.5s ease;
+  margin-top: 0;
+  margin-bottom: 0;
+  width: 100%;
+  justify-items: center;
+  /* Centers the toast horizontally */
+}
+
+/* When active, give it space and height */
+.announcement-spacer.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  margin-top: 2rem;
+  /* Space above toast */
+  margin-bottom: 1rem;
+  /* Space between toast and nav bar */
+}
+
+/* Required for the grid animation trick */
+.announcement-inner {
+  overflow: hidden;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .background-option.active {

@@ -42,7 +42,7 @@ const Toast = ({ message, show }) => {
   );
 };
 
-// --- New: Announcement Toast (Persistent until closed) ---
+// --- Announcement Toast (Persistent until closed) ---
 const AnnouncementToast = ({ message, show, onClose }) => {
   return (
     <div className={`toast-notification announcement ${show ? 'show' : ''}`}>
@@ -703,9 +703,9 @@ const SettingsPage = React.forwardRef(({
               saturation1={silkSaturation1} setSaturation1={setSilkSaturation1}
               lightness1={silkLightness1} setLightness1={setSilkLightness1}
               saturation2={silkSaturation2} setSaturation2={setSilkSaturation2}
-              lightness2={silkLightness2} setLightness2={setSilkLightness2}
+              lightness2={silkLightness2} setSilkLightness2={setSilkLightness2}
               saturation3={silkSaturation3} setSaturation3={setSilkSaturation3}
-              lightness3={silkLightness3} setLightness3={setSilkLightness3}
+              lightness3={silkLightness3} setSilkLightness3={setSilkLightness3}
               backgroundType={backgroundType} setBackgroundType={setBackgroundType}
               triggerResize={triggerCardResize}
             />
@@ -832,15 +832,13 @@ function App() {
   useEffect(() => {
     const fetchAnnouncement = async () => {
       try {
-        // Assumes endpoint returns: { message: "...", id: "unique-id-123" }
-        // If the endpoint returns null or empty, no toast is shown.
         const response = await fetch(`${API_BASE_URL}/announcement`);
         if (response.ok) {
           const data = await response.json();
           if (data && data.message && data.id) {
             const closedId = getCookie('closedAnnouncementId');
             // Only show if the current ID is DIFFERENT from the one stored in cookies
-            if (closedId !== data.id) {
+            if (String(closedId) !== String(data.id)) {
               setAnnouncement({ show: true, message: data.message, id: data.id });
             }
           }
@@ -1231,7 +1229,6 @@ function App() {
   return (
     <div className="App">
       <Toast message={toast.message} show={toast.show} />
-      <AnnouncementToast message={announcement.message} show={announcement.show} onClose={closeAnnouncement} />
 
       <div className="silk-container">
         {backgroundType === 'silk' ? (
@@ -1254,7 +1251,15 @@ function App() {
           />
         )}
       </div>
+
       <div className="content-area">
+        {/* Wrapper for the Announcement Toast to push content down */}
+        <div className={`announcement-spacer ${announcement.show ? 'open' : ''}`}>
+          <div className="announcement-inner">
+            <AnnouncementToast message={announcement.message} show={true} onClose={closeAnnouncement} />
+          </div>
+        </div>
+
         <CardNav logo={logo} logoAlt="Company Logo" items={navItemsTemplate} menuColor="#fff" buttonBgColor="transparent" buttonTextColor="#fff" ease="power3.out" isGlass={true} glassBlur={15} glassTransparency={0.05} distortionScale={-80} ctaButtonText="--°F" isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(!isChapelVisible)} isAiVisible={isAiVisible} onToggleAi={() => setIsAiVisible(!isAiVisible)} />
         <div className="card-container">
           <GlassSurface ref={mealCardRef} borderRadius={20} className="meal-card" distortionScale={-80}>
