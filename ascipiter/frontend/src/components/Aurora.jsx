@@ -193,7 +193,7 @@ export default function Aurora(props) {
             if (ctn && gl.canvas.parentNode === ctn) {
                 ctn.removeChild(gl.canvas);
             }
-            gl.getExtension('WEBGL_lose_context')?.loseContext();
+            // Removed explicit loseContext() to prevent "Context Lost" warnings and potential instability on Edge
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [amplitude]);
