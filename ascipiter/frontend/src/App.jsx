@@ -611,7 +611,9 @@ const SettingsPage = React.forwardRef(({
   silkSaturation3, setSilkSaturation3,
   silkLightness3, setSilkLightness3,
   backgroundType, setBackgroundType,
+
   isHighContrast, onToggleHighContrast,
+  isNonVegMode, onToggleNonVegMode,
   triggerCardResize
 }, ref) => {
   const [activeTab, setActiveTab] = useState('General');
@@ -652,6 +654,7 @@ const SettingsPage = React.forwardRef(({
             <ToggleSwitch label={showMealHours ? "Show Meal Times" : "Show Meal Times"} isToggled={showMealHours} onToggle={onToggleShowMealHours} />
             <ToggleSwitch label={isRatingVisible ? "Show Rating System" : "Show Rating System"} isToggled={isRatingVisible} onToggle={onToggleRatingVisible} />
             {isRatingVisible && <ToggleSwitch label={showRatingCount ? "Show Rating Count" : "Show Rating Count"} isToggled={showRatingCount} onToggle={onToggleShowRatingCount} />}
+            <ToggleSwitch label="Disable Vegetarian" isToggled={isNonVegMode} onToggle={onToggleNonVegMode} />
           </div>
         );
       case 'AI Settings':
@@ -794,6 +797,7 @@ function App() {
   const [silkLightness3, setSilkLightness3] = useState(() => parseFloat(getCookie('silkLightness3')) || 70);
 
   const [isHighContrast, setIsHighContrast] = useState(() => getCookie('isHighContrast') === 'true');
+  const [isNonVegMode, setIsNonVegMode] = useState(() => getCookie('isNonVegMode') === 'true');
 
   const [aiResponses, setAiResponses] = useState({});
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
@@ -883,6 +887,7 @@ function App() {
   useEffect(() => { setCookie('isHighContrast', isHighContrast, 365); }, [isHighContrast]);
 
   useEffect(() => { setCookie('showRatingCount', showRatingCount, 365); }, [showRatingCount]);
+  useEffect(() => { setCookie('isNonVegMode', isNonVegMode, 365); }, [isNonVegMode]);
 
   const showToast = useCallback((message) => {
     setToast({ show: true, message });
@@ -972,7 +977,8 @@ function App() {
     const fetchMenuData = async () => {
       const loaderTimer = setTimeout(() => { if (isMounted) setShowMenuLoader(true); }, 300);
       try {
-        const initialResponse = await fetch(`${API_BASE_URL}/menu`);
+        const url = isNonVegMode ? `${API_BASE_URL}/menu?type=non-veg` : `${API_BASE_URL}/menu`;
+        const initialResponse = await fetch(url);
         if (!initialResponse.ok) throw new Error(`HTTP error! Status: ${initialResponse.status}`);
         const initialData = await initialResponse.json();
         if (isMounted) setMenuData(initialData);
@@ -983,7 +989,8 @@ function App() {
         if (isMounted) setIsMenuLoading(false);
       }
       try {
-        const refreshResponse = await fetch(`${API_BASE_URL}/menu/refresh`);
+        const refreshUrl = isNonVegMode ? `${API_BASE_URL}/menu/refresh?type=non-veg` : `${API_BASE_URL}/menu/refresh`;
+        const refreshResponse = await fetch(refreshUrl);
         if (refreshResponse.status === 200) {
           const newData = await refreshResponse.json();
           if (isMounted) setMenuData(newData);
@@ -1027,7 +1034,8 @@ function App() {
     fetchWeeklyMenu();
 
     return () => { isMounted = false; };
-  }, [API_BASE_URL]);
+    return () => { isMounted = false; };
+  }, [API_BASE_URL, isNonVegMode]);
 
   useLayoutEffect(() => {
     if (isMenuLoading || !mealCardRef.current || !mealContentRef.current || !pageContentRef.current || isSettingsVisible) return;
@@ -1181,6 +1189,11 @@ function App() {
             </div>
           );
         })}
+        {isNonVegMode && (
+          <p style={{ textAlign: 'center', fontSize: '0.8em', opacity: 0.7, marginTop: '20px', marginBottom: '10px' }}>
+            This menu attempts to exclude vegetarian options but it may be inaccurate. Disable filter for the most accurate experience.
+          </p>
+        )}
       </div>
     );
   };
@@ -1287,6 +1300,7 @@ function App() {
                   silkLightness3={silkLightness3} setSilkLightness3={setSilkLightness3}
                   backgroundType={backgroundType} setBackgroundType={setBackgroundType}
                   isHighContrast={isHighContrast} onToggleHighContrast={() => setIsHighContrast(v => !v)}
+                  isNonVegMode={isNonVegMode} onToggleNonVegMode={() => setIsNonVegMode(v => !v)}
                   triggerCardResize={triggerCardResize}
                 />) : (<div ref={pageContentRef}>{renderCardContent()}</div>)}
               {!isSettingsVisible && (

@@ -11,6 +11,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 # Import the functions from your scraper files
 from scrape_menu import get_menu_data_for_template
+from scrape_menu_non_veg import get_non_veg_menu_data
 from scrape_weather import get_weather
 from scrape_chapel import get_chapel_events
 from scrape_weekly import find_weekly_menu_url, scrape_weekly_menu
@@ -27,6 +28,7 @@ CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "https://b
 
 # --- FILE PATH CONFIGURATION ---
 MENU_CACHE_FILE = 'menu_cache.json'
+MENU_CACHE_NON_VEG_FILE = 'menu_cache_non_veg.json'
 CHAPEL_CACHE_FILE = 'chapel_cache.json'
 WEEKLY_MENU_CACHE_FILE = 'weekly_menu_cache.json'
 ANNOUNCEMENT_FILE = 'announcement.json' # --- NEW ---
@@ -57,6 +59,27 @@ def write_menu_cache(data):
         logging.info("Successfully wrote to menu cache.")
     except IOError as e:
         logging.error(f"Error writing to menu cache file {MENU_CACHE_FILE}: {e}")
+
+def read_menu_cache_non_veg():
+    if os.path.exists(MENU_CACHE_NON_VEG_FILE):
+        try:
+            with open(MENU_CACHE_NON_VEG_FILE, 'r') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            logging.error(f"Error reading non-veg menu cache file {MENU_CACHE_NON_VEG_FILE}: {e}")
+    return None
+
+def write_menu_cache_non_veg(data):
+    cache_content = {
+        'timestamp': datetime.datetime.utcnow().isoformat(),
+        'data': data
+    }
+    try:
+        with open(MENU_CACHE_NON_VEG_FILE, 'w') as f:
+            json.dump(cache_content, f)
+        logging.info("Successfully wrote to non-veg menu cache.")
+    except IOError as e:
+        logging.error(f"Error writing to non-veg menu cache file {MENU_CACHE_NON_VEG_FILE}: {e}")
 
 def read_chapel_cache():
     if os.path.exists(CHAPEL_CACHE_FILE):
@@ -138,6 +161,16 @@ def update_menu_cache_job():
         except Exception as e:
             logging.error(f"SCHEDULER: Error during scheduled daily scrape: {e}")
 
+def update_non_veg_menu_cache_job():
+    with app.app_context():
+        logging.info("SCHEDULER: Running scheduled daily NON-VEG menu scrape job...")
+        try:
+            menu_data = get_non_veg_menu_data()
+            write_menu_cache_non_veg(menu_data)
+            logging.info("SCHEDULER: Daily NON-VEG menu cache successfully updated.")
+        except Exception as e:
+            logging.error(f"SCHEDULER: Error during scheduled daily NON-VEG scrape: {e}")
+
 def update_weekly_menu_cache_job():
     with app.app_context():
         logging.info("SCHEDULER: Running scheduled WEEKLY menu scrape job...")
@@ -188,30 +221,57 @@ def update_announcement():
 # --- MENU ENDPOINTS ---
 @app.route('/api/menu', methods=['GET'])
 def menu_endpoint():
-    logging.info("Received request for /api/menu (today)")
-    cached_info = read_menu_cache()
-    if cached_info and 'data' in cached_info:
-        return jsonify(cached_info['data'])
+    menu_type = request.args.get('type')
+    logging.info(f"Received request for /api/menu (today) type={menu_type}")
+    
+    if menu_type == 'non-veg':
+        cached_info = read_menu_cache_non_veg()
+        if cached_info and 'data' in cached_info:
+            return jsonify(cached_info['data'])
+        else:
+            logging.warning("Non-veg cache is empty. Performing initial scrape for /api/menu?type=non-veg.")
+            update_non_veg_menu_cache_job()
+            cached_info = read_menu_cache_non_veg()
+            return jsonify(cached_info.get('data', {}))
     else:
-        logging.warning("Daily cache is empty. Performing initial scrape for /api/menu.")
-        update_menu_cache_job()
         cached_info = read_menu_cache()
-        return jsonify(cached_info.get('data', {}))
+        if cached_info and 'data' in cached_info:
+            return jsonify(cached_info['data'])
+        else:
+            logging.warning("Daily cache is empty. Performing initial scrape for /api/menu.")
+            update_menu_cache_job()
+            cached_info = read_menu_cache()
+            return jsonify(cached_info.get('data', {}))
 
 @app.route('/api/menu/refresh', methods=['GET'])
 def menu_refresh_endpoint():
-    logging.info("Received request for /api/menu/refresh from client.")
-    cached_info = read_menu_cache()
-    old_data = cached_info.get('data', {}) if cached_info else {}
-    new_data = get_menu_data_for_template()
-    if json.dumps(new_data, sort_keys=True) != json.dumps(old_data, sort_keys=True):
-        logging.info("New menu data found via client refresh. Updating cache and returning data.")
-        write_menu_cache(new_data)
-        return jsonify(new_data)
+    menu_type = request.args.get('type')
+    logging.info(f"Received request for /api/menu/refresh from client. type={menu_type}")
+    
+    if menu_type == 'non-veg':
+        cached_info = read_menu_cache_non_veg()
+        old_data = cached_info.get('data', {}) if cached_info else {}
+        new_data = get_non_veg_menu_data()
+        if json.dumps(new_data, sort_keys=True) != json.dumps(old_data, sort_keys=True):
+            logging.info("New NON-VEG menu data found via client refresh. Updating cache and returning data.")
+            write_menu_cache_non_veg(new_data)
+            return jsonify(new_data)
+        else:
+            logging.info("Client refresh scraped same NON-VEG data. Not updating UI.")
+            write_menu_cache_non_veg(old_data) 
+            return ('', 204)
     else:
-        logging.info("Client refresh scraped same data. Not updating UI.")
-        write_menu_cache(old_data) 
-        return ('', 204)
+        cached_info = read_menu_cache()
+        old_data = cached_info.get('data', {}) if cached_info else {}
+        new_data = get_menu_data_for_template()
+        if json.dumps(new_data, sort_keys=True) != json.dumps(old_data, sort_keys=True):
+            logging.info("New menu data found via client refresh. Updating cache and returning data.")
+            write_menu_cache(new_data)
+            return jsonify(new_data)
+        else:
+            logging.info("Client refresh scraped same data. Not updating UI.")
+            write_menu_cache(old_data) 
+            return ('', 204)
 
 @app.route('/api/weekly-menu', methods=['GET'])
 def weekly_menu_endpoint():
@@ -338,12 +398,15 @@ def get_loads():
 if __name__ == '__main__':
     scheduler = BackgroundScheduler(daemon=True)
     scheduler.add_job(update_menu_cache_job, 'interval', minutes=60)
+    scheduler.add_job(update_non_veg_menu_cache_job, 'interval', minutes=60)
     scheduler.add_job(update_weekly_menu_cache_job, 'interval', hours=4)
     scheduler.start()
     
     with app.app_context():
         logging.info("Performing initial daily menu scrape on startup...")
         update_menu_cache_job()
+        logging.info("Performing initial daily NON-VEG menu scrape on startup...")
+        update_non_veg_menu_cache_job()
         logging.info("Performing initial weekly menu scrape on startup...")
         update_weekly_menu_cache_job()
 
