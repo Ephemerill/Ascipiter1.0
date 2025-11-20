@@ -110,7 +110,7 @@ void main() {
 `;
 
 export default function Aurora(props) {
-    const { colorStops = ['#5227FF', '#7cff67', '#5227FF'], amplitude = 1.0, blend = 0.5 } = props;
+    const { colorStops = ['#5227FF', '#7cff67', '#5227FF'], amplitude = 1.0, blend = 0.5, onContextLost } = props;
     const propsRef = useRef(props);
     propsRef.current = props;
 
@@ -130,6 +130,13 @@ export default function Aurora(props) {
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
         gl.canvas.style.backgroundColor = 'transparent';
+
+        // --- Context Loss Handling ---
+        const handleContextLost = (event) => {
+            event.preventDefault();
+            if (onContextLost) onContextLost(event);
+        };
+        gl.canvas.addEventListener('webglcontextlost', handleContextLost, false);
 
         let program;
 
@@ -190,6 +197,9 @@ export default function Aurora(props) {
         return () => {
             cancelAnimationFrame(animateId);
             window.removeEventListener('resize', resize);
+            if (gl && gl.canvas) {
+                gl.canvas.removeEventListener('webglcontextlost', handleContextLost);
+            }
             if (ctn && gl.canvas.parentNode === ctn) {
                 ctn.removeChild(gl.canvas);
             }

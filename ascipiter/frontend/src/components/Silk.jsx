@@ -91,7 +91,7 @@ const SilkPlane = forwardRef(function SilkPlane({ uniforms }, ref) {
 });
 SilkPlane.displayName = 'SilkPlane';
 
-const Silk = ({ speed = 5, scale = 1, color1 = '#7B7481', color2 = '#ADD8E6', noiseIntensity = 1.5, rotation = 0 }) => {
+const Silk = ({ speed = 5, scale = 1, color1 = '#7B7481', color2 = '#ADD8E6', noiseIntensity = 1.5, rotation = 0, onContextLost }) => {
   const meshRef = useRef();
 
   const uniforms = useMemo(
@@ -129,6 +129,13 @@ const Silk = ({ speed = 5, scale = 1, color1 = '#7B7481', color2 = '#ADD8E6', no
         stencil: false,   // No stencil buffer needed
         depth: false,     // No depth buffer needed for a 2D plane
         powerPreference: "high-performance" // Hint to use discrete GPU
+      }}
+      onCreated={({ gl }) => {
+        const handleContextLost = (event) => {
+          event.preventDefault();
+          if (onContextLost) onContextLost(event);
+        };
+        gl.domElement.addEventListener('webglcontextlost', handleContextLost, false);
       }}
     >
       <SilkPlane ref={meshRef} uniforms={uniforms} />

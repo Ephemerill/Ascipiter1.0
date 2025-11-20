@@ -614,7 +614,8 @@ const SettingsPage = React.forwardRef(({
 
   isHighContrast, onToggleHighContrast,
   isNonVegMode, onToggleNonVegMode,
-  triggerCardResize
+  triggerCardResize,
+  isAnimationsDisabled, onEnableAnimations
 }, ref) => {
   const [activeTab, setActiveTab] = useState('General');
   const [loadData, setLoadData] = useState(null);
@@ -671,6 +672,26 @@ const SettingsPage = React.forwardRef(({
           <div className="appearance-settings">
             <h3>Appearance</h3>
             <p>Change the background by dragging the bubbles.</p>
+
+            {isAnimationsDisabled && (
+              <div style={{ marginBottom: '20px', padding: '10px', background: 'rgba(255, 50, 50, 0.1)', borderRadius: '8px', border: '1px solid rgba(255, 50, 50, 0.3)' }}>
+                <p style={{ fontSize: '0.9rem', color: '#ff6b6b', marginBottom: '10px' }}>Animations are disabled due to a previous crash.</p>
+                <button
+                  onClick={onEnableAnimations}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  Re-enable Animations
+                </button>
+              </div>
+            )}
 
             <div className="background-selector">
               <label style={{ fontSize: '0.9rem', marginBottom: '8px', display: 'block', opacity: 0.8 }}>Background Style</label>
@@ -798,6 +819,39 @@ function App() {
 
   const [isHighContrast, setIsHighContrast] = useState(() => getCookie('isHighContrast') === 'true');
   const [isNonVegMode, setIsNonVegMode] = useState(() => getCookie('isNonVegMode') === 'true');
+
+  // --- WebGL Context Loss Handling ---
+  const [isAnimationsDisabled, setIsAnimationsDisabled] = useState(() => {
+    return localStorage.getItem('disable_animation') === 'true';
+  });
+
+  const handleContextLost = useCallback((event) => {
+    event && event.preventDefault();
+    console.error("WebGL Context Lost! Reloading and disabling animations.");
+    localStorage.setItem('disable_animation', 'true');
+    window.location.reload();
+  }, []);
+
+  const handleEnableAnimations = useCallback(() => {
+    localStorage.removeItem('disable_animation');
+    setIsAnimationsDisabled(false);
+    window.location.reload();
+  }, []);
+
+  // Generate a static background style based on current colors
+  const staticBackgroundStyle = useMemo(() => {
+    if (backgroundType === 'aurora') {
+      // Simple approximation for Aurora
+      return {
+        background: `linear-gradient(135deg, hsl(${silkAngle1}, ${silkSaturation1}%, ${silkLightness1}%), hsl(${silkAngle2}, ${silkSaturation2}%, ${silkLightness2}%))`
+      };
+    } else {
+      // Approximation for Silk
+      return {
+        background: `linear-gradient(to bottom, hsl(${silkAngle1}, ${silkSaturation1}%, ${silkLightness1}%), hsl(${silkAngle2}, ${silkSaturation2}%, ${silkLightness2}%))`
+      };
+    }
+  }, [backgroundType, silkAngle1, silkSaturation1, silkLightness1, silkAngle2, silkSaturation2, silkLightness2]);
 
   const [aiResponses, setAiResponses] = useState({});
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
@@ -1244,24 +1298,30 @@ function App() {
       <Toast message={toast.message} show={toast.show} />
 
       <div className="silk-container">
-        {backgroundType === 'silk' ? (
-          <Silk
-            speed={5} scale={1}
-            color1={silkColor1}
-            color2={silkColor2}
-            noiseIntensity={1.5} rotation={0}
-          />
+        {isAnimationsDisabled ? (
+          <div className="static-background" style={{ width: '100%', height: '100%', ...staticBackgroundStyle }} />
         ) : (
-          <Aurora
-            colorStops={[
-              hslToHex(silkAngle1, silkSaturation1, silkLightness1),
-              hslToHex(silkAngle2, silkSaturation2, silkLightness2),
-              hslToHex(silkAngle3, silkSaturation3, silkLightness3)
-            ]}
-            blend={0.4}
-            amplitude={1.2}
-            speed={0.3}
-          />
+          backgroundType === 'silk' ? (
+            <Silk
+              speed={5} scale={1}
+              color1={silkColor1}
+              color2={silkColor2}
+              noiseIntensity={1.5} rotation={0}
+              onContextLost={handleContextLost}
+            />
+          ) : (
+            <Aurora
+              colorStops={[
+                hslToHex(silkAngle1, silkSaturation1, silkLightness1),
+                hslToHex(silkAngle2, silkSaturation2, silkLightness2),
+                hslToHex(silkAngle3, silkSaturation3, silkLightness3)
+              ]}
+              blend={0.4}
+              amplitude={1.2}
+              speed={0.3}
+              onContextLost={handleContextLost}
+            />
+          )
         )}
       </div>
 
