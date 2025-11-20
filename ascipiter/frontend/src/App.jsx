@@ -685,19 +685,19 @@ const SettingsPage = React.forwardRef(({
                 <div className={`background-dropdown-options ${isBackgroundDropdownOpen ? 'open' : ''}`}>
                   <button
                     className={`background-option ${backgroundType === 'silk' ? 'active' : ''}`}
-                    onClick={() => { setBackgroundType('silk'); setIsBackgroundDropdownOpen(false); }}
+                    onClick={() => { setBackgroundType('silk'); }}
                   >
                     Silk
                   </button>
                   <button
                     className={`background-option ${backgroundType === 'aurora' ? 'active' : ''}`}
-                    onClick={() => { setBackgroundType('aurora'); setIsBackgroundDropdownOpen(false); }}
+                    onClick={() => { setBackgroundType('aurora'); }}
                   >
                     Aurora
                   </button>
                   <button
                     className={`background-option ${backgroundType === 'gradient' ? 'active' : ''}`}
-                    onClick={() => { setBackgroundType('gradient'); setIsBackgroundDropdownOpen(false); }}
+                    onClick={() => { setBackgroundType('gradient'); }}
                   >
                     Gradient
                   </button>
@@ -804,6 +804,8 @@ function App() {
 
   const [isHighContrast, setIsHighContrast] = useState(() => getCookie('isHighContrast') === 'true');
   const [isNonVegMode, setIsNonVegMode] = useState(() => getCookie('isNonVegMode') === 'true');
+
+  const [isTransitioningBackground, setIsTransitioningBackground] = useState(false);
 
   // --- WebGL Context Loss Handling ---
   const handleContextLost = useCallback((event) => {
@@ -1268,34 +1270,53 @@ function App() {
     );
   };
 
+  const handleBackgroundChange = (newType) => {
+    if (newType === backgroundType) return;
+    setIsBackgroundDropdownOpen(false);
+    // Start transition: unmount current background
+    setIsTransitioningBackground(true);
+    // Wait for cleanup (100ms) then set new type
+    setTimeout(() => {
+      setBackgroundType(newType);
+      // Wait a bit more for state to settle before remounting new background
+      setTimeout(() => {
+        setIsTransitioningBackground(false);
+      }, 50);
+    }, 100);
+  };
+
   return (
     <div className="App">
       <Toast message={toast.message} show={toast.show} />
 
       <div className="silk-container">
-        {backgroundType === 'gradient' ? (
+        {isTransitioningBackground ? (
           <div className="static-background" style={{ width: '100%', height: '100%', ...staticBackgroundStyle }} />
         ) : (
-          backgroundType === 'silk' ? (
-            <Silk
-              speed={5} scale={1}
-              color1={silkColor1}
-              color2={silkColor2}
-              noiseIntensity={1.5} rotation={0}
-              onContextLost={handleContextLost}
-            />
+          backgroundType === 'gradient' ? (
+            <div className="static-background" style={{ width: '100%', height: '100%', ...staticBackgroundStyle }} />
           ) : (
-            <Aurora
-              colorStops={[
-                hslToHex(silkAngle1, silkSaturation1, silkLightness1),
-                hslToHex(silkAngle2, silkSaturation2, silkLightness2),
-                hslToHex(silkAngle3, silkSaturation3, silkLightness3)
-              ]}
-              blend={0.4}
-              amplitude={1.2}
-              speed={0.3}
-              onContextLost={handleContextLost}
-            />
+            backgroundType === 'silk' ? (
+              <Silk
+                speed={5} scale={1}
+                color1={silkColor1}
+                color2={silkColor2}
+                noiseIntensity={1.5} rotation={0}
+                onContextLost={handleContextLost}
+              />
+            ) : (
+              <Aurora
+                colorStops={[
+                  hslToHex(silkAngle1, silkSaturation1, silkLightness1),
+                  hslToHex(silkAngle2, silkSaturation2, silkLightness2),
+                  hslToHex(silkAngle3, silkSaturation3, silkLightness3)
+                ]}
+                blend={0.4}
+                amplitude={1.2}
+                speed={0.3}
+                onContextLost={handleContextLost}
+              />
+            )
           )
         )}
       </div>
@@ -1333,7 +1354,7 @@ function App() {
                   silkLightness2={silkLightness2} setSilkLightness2={setSilkLightness2}
                   silkSaturation3={silkSaturation3} setSilkSaturation3={setSilkSaturation3}
                   silkLightness3={silkLightness3} setSilkLightness3={setSilkLightness3}
-                  backgroundType={backgroundType} setBackgroundType={setBackgroundType}
+                  backgroundType={backgroundType} setBackgroundType={handleBackgroundChange}
                   isHighContrast={isHighContrast} onToggleHighContrast={() => setIsHighContrast(v => !v)}
                   isNonVegMode={isNonVegMode} onToggleNonVegMode={() => setIsNonVegMode(v => !v)}
                   triggerCardResize={triggerCardResize}
