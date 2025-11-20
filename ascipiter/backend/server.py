@@ -13,7 +13,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from scrape_menu import get_menu_data_for_template
 from scrape_weather import get_weather
 from scrape_chapel import get_chapel_events
-# --- NEW: Import weekly scraper functions ---
 from scrape_weekly import find_weekly_menu_url, scrape_weekly_menu
 
 # Configure basic logging
@@ -23,15 +22,18 @@ app = Flask(__name__)
 
 # --- IMPORTANT: UPDATE THIS LINE ---
 # Add your deployed frontend URL to this list.
-# Make sure there is NO trailing slash (e.g., use "https://mysite.com" NOT "https://mysite.com/")
 CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "https://biolawizard.com", "https://dev.biolawizard.com"]}})
 
 
 # --- FILE PATH CONFIGURATION ---
 MENU_CACHE_FILE = 'menu_cache.json'
 CHAPEL_CACHE_FILE = 'chapel_cache.json'
-WEEKLY_MENU_CACHE_FILE = 'weekly_menu_cache.json' # --- NEW ---
+WEEKLY_MENU_CACHE_FILE = 'weekly_menu_cache.json'
+ANNOUNCEMENT_FILE = 'announcement.json' # --- NEW ---
 RATINGS_DB = 'ratings.db'
+
+# --- SECURITY CONFIGURATION ---
+ADMIN_SECRET = 'EGG' # --- NEW: CHANGE THIS TO MATCH N8N ---
 
 
 # --- CACHE & DB FUNCTIONS ---
@@ -77,7 +79,6 @@ def write_chapel_cache(data):
     except IOError as e:
         logging.error(f"Error writing to chapel cache file {CHAPEL_CACHE_FILE}: {e}")
 
-# --- NEW: Weekly Menu Cache Functions ---
 def read_weekly_menu_cache():
     if os.path.exists(WEEKLY_MENU_CACHE_FILE):
         try:
@@ -99,6 +100,25 @@ def write_weekly_menu_cache(data):
     except IOError as e:
         logging.error(f"Error writing to weekly menu cache file {WEEKLY_MENU_CACHE_FILE}: {e}")
 
+# --- NEW: Announcement Cache Functions ---
+def read_announcement_cache():
+    if os.path.exists(ANNOUNCEMENT_FILE):
+        try:
+            with open(ANNOUNCEMENT_FILE, 'r') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            logging.error(f"Error reading announcement file: {e}")
+    # Return default structure if file doesn't exist or errors
+    return {"message": "", "id": None}
+
+def write_announcement_cache(data):
+    try:
+        with open(ANNOUNCEMENT_FILE, 'w') as f:
+            json.dump(data, f)
+        logging.info("Successfully wrote to announcement cache.")
+    except IOError as e:
+        logging.error(f"Error writing to announcement file: {e}")
+
 
 def get_ratings_db_connection():
     """Establishes a connection to the ratings database."""
@@ -118,7 +138,6 @@ def update_menu_cache_job():
         except Exception as e:
             logging.error(f"SCHEDULER: Error during scheduled daily scrape: {e}")
 
-# --- NEW: Weekly Menu Update Job ---
 def update_weekly_menu_cache_job():
     with app.app_context():
         logging.info("SCHEDULER: Running scheduled WEEKLY menu scrape job...")
@@ -139,6 +158,32 @@ def update_weekly_menu_cache_job():
 
 
 # --- API ENDPOINTS ---
+
+# --- ANNOUNCEMENT ENDPOINTS (NEW) ---
+@app.route('/api/announcement', methods=['GET'])
+def get_announcement():
+    # React App calls this to see if there is a new message
+    return jsonify(read_announcement_cache())
+
+@app.route('/api/update-announcement', methods=['POST'])
+def update_announcement():
+    # n8n calls this to push a new message
+    data = request.get_json()
+    
+    # Security Check
+    if data.get('secret') != ADMIN_SECRET:
+        logging.warning("Unauthorized attempt to update announcement")
+        return jsonify({"error": "Forbidden"}), 403
+        
+    new_data = {
+        "message": data.get('message'),
+        "id": data.get('id')
+    }
+    
+    write_announcement_cache(new_data)
+    logging.info(f"Announcement updated via API: {new_data['id']}")
+    return jsonify({"success": True})
+
 
 # --- MENU ENDPOINTS ---
 @app.route('/api/menu', methods=['GET'])
@@ -168,7 +213,6 @@ def menu_refresh_endpoint():
         write_menu_cache(old_data) 
         return ('', 204)
 
-# --- NEW: Weekly Menu Endpoint ---
 @app.route('/api/weekly-menu', methods=['GET'])
 def weekly_menu_endpoint():
     logging.info("Received request for /api/weekly-menu")
@@ -244,7 +288,6 @@ def rate_meal():
     
     return jsonify({"success": True}), 201
 
-# --- (Add your other endpoints like weather, chapel, analytics here) ---
 @app.route('/api/chapel', methods=['GET'])
 def chapel_endpoint():
     cached_info = read_chapel_cache()
@@ -295,7 +338,6 @@ def get_loads():
 if __name__ == '__main__':
     scheduler = BackgroundScheduler(daemon=True)
     scheduler.add_job(update_menu_cache_job, 'interval', minutes=60)
-    # --- NEW: Add weekly job ---
     scheduler.add_job(update_weekly_menu_cache_job, 'interval', hours=4)
     scheduler.start()
     

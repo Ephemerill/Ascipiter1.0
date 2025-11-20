@@ -1155,6 +1155,8 @@ html,
   background-color: rgba(255, 255, 255, 0.2);
 }
 
+/* --- TOAST & ANNOUNCEMENT STYLES --- */
+
 .toast-notification {
   position: fixed;
   bottom: 2rem;
@@ -1177,6 +1179,56 @@ html,
   visibility: visible;
   transform: translate(-50%, 0);
 }
+
+/* Specific styles for the Announcement Toast (Top of screen) */
+.toast-notification.announcement {
+  bottom: auto;
+  top: 2rem;
+  /* Moves it to the top */
+  transform: translate(-50%, -20px);
+  padding: 12px 45px 12px 20px;
+  /* Extra right padding for X button */
+  background-color: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  max-width: 90%;
+  width: max-content;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.toast-notification.announcement.show {
+  transform: translate(-50%, 0);
+}
+
+.announcement-content {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.announcement-close {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.announcement-close:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
 
 /* --- RATING SYSTEM STYLES (UPDATED THINNER AND SHORTER) --- */
 .meal-rhs-content {

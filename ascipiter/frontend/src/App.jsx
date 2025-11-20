@@ -33,11 +33,25 @@ console.warn = (...args) => {
 };
 // ------------------------------
 
-// --- Toast Component ---
+// --- Standard Toast Component (Auto-hiding) ---
 const Toast = ({ message, show }) => {
   return (
     <div className={`toast-notification ${show ? 'show' : ''}`}>
       {message}
+    </div>
+  );
+};
+
+// --- New: Announcement Toast (Persistent until closed) ---
+const AnnouncementToast = ({ message, show, onClose }) => {
+  return (
+    <div className={`toast-notification announcement ${show ? 'show' : ''}`}>
+      <div className="announcement-content">{message}</div>
+      <button className="announcement-close" onClick={onClose} aria-label="Close announcement">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 1.41L12.59 0L7 5.59L1.41 0L0 1.41L5.59 7L0 12.59L1.41 14L7 8.41L12.59 14L14 12.59L8.41 7L14 1.41Z" fill="currentColor" />
+        </svg>
+      </button>
     </div>
   );
 };
@@ -786,6 +800,9 @@ function App() {
   const [isFeedbackVisible, setIsFeedbackVisible] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '' });
 
+  // --- State for Announcement Toast ---
+  const [announcement, setAnnouncement] = useState({ show: false, message: '', id: null });
+
   const mealCardRef = useRef(null);
   const chapelCardRef = useRef(null);
   const mealContentRef = useRef(null);
@@ -810,6 +827,40 @@ function App() {
       effectRan.current = true;
     }
   }, [API_BASE_URL]);
+
+  // --- Fetch Announcement Data on Load ---
+  useEffect(() => {
+    const fetchAnnouncement = async () => {
+      try {
+        // Assumes endpoint returns: { message: "...", id: "unique-id-123" }
+        // If the endpoint returns null or empty, no toast is shown.
+        const response = await fetch(`${API_BASE_URL}/announcement`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.message && data.id) {
+            const closedId = getCookie('closedAnnouncementId');
+            // Only show if the current ID is DIFFERENT from the one stored in cookies
+            if (closedId !== data.id) {
+              setAnnouncement({ show: true, message: data.message, id: data.id });
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch announcement:", error);
+      }
+    };
+
+    fetchAnnouncement();
+  }, [API_BASE_URL]);
+
+  const closeAnnouncement = useCallback(() => {
+    if (announcement.id) {
+      // Save this specific announcement ID as closed
+      setCookie('closedAnnouncementId', announcement.id, 365);
+    }
+    setAnnouncement(prev => ({ ...prev, show: false }));
+  }, [announcement.id]);
+
 
   useEffect(() => { setCookie('chapelVisible', isChapelVisible, 365); }, [isChapelVisible]);
   useEffect(() => { setCookie('creditsVisible', isCreditsVisible, 365); }, [isCreditsVisible]);
@@ -1180,6 +1231,8 @@ function App() {
   return (
     <div className="App">
       <Toast message={toast.message} show={toast.show} />
+      <AnnouncementToast message={announcement.message} show={announcement.show} onClose={closeAnnouncement} />
+
       <div className="silk-container">
         {backgroundType === 'silk' ? (
           <Silk

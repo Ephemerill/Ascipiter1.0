@@ -167,9 +167,9 @@ const CardNav = ({
                   let label;
 
                   if (lnk.id === 'ai-toggle') {
-                    label = isAiVisible ? 'Hide AI Helper' : 'Show AI Helper';
+                    label = isAiVisible ? 'Show AI Helper' : 'Show AI Helper';
                   } else {
-                    label = isChapelVisible ? 'Hide Chapel Schedule' : 'Show Chapel Schedule';
+                    label = isChapelVisible ? 'Show Chapel Schedule' : 'Show Chapel Schedule';
                   }
 
                   return (
@@ -181,7 +181,7 @@ const CardNav = ({
                     />
                   );
                 }
-                
+
                 // --- NEW: Handle buttons ---
                 if (lnk.type === 'button') {
                   return (
@@ -195,7 +195,7 @@ const CardNav = ({
                     </button>
                   );
                 }
-                
+
                 // Default to a standard link
                 return (
                   <a key={`${lnk.label}-${i}`} className="nav-card-link" href={lnk.href} target={lnk.target} rel={lnk.target === '_blank' ? 'noopener noreferrer' : undefined} aria-label={lnk.ariaLabel}>
