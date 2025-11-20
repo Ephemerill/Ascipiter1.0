@@ -119,13 +119,17 @@ const Silk = ({ speed = 5, scale = 1, color1 = '#7B7481', color2 = '#ADD8E6', no
   }, [color1, color2]);
 
   return (
-    <Canvas 
-      dpr={[1, 2]} 
+    <Canvas
+      dpr={[1, 1.5]} // Cap DPR to 1.5 to save memory on high-density screens
       frameloop="always"
-      // THIS IS THE CRUCIAL CHANGE
-      // It tells WebGL to keep the image data in the buffer after it has been rendered,
-      // which allows html2canvas to access it.
-      gl={{ preserveDrawingBuffer: true }}
+      // Optimize WebGL context creation
+      gl={{
+        preserveDrawingBuffer: true, // Needed for html2canvas
+        antialias: false, // Disable antialias for performance (shader is smooth anyway)
+        stencil: false,   // No stencil buffer needed
+        depth: false,     // No depth buffer needed for a 2D plane
+        powerPreference: "high-performance" // Hint to use discrete GPU
+      }}
     >
       <SilkPlane ref={meshRef} uniforms={uniforms} />
     </Canvas>
