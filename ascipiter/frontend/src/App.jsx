@@ -614,8 +614,7 @@ const SettingsPage = React.forwardRef(({
 
   isHighContrast, onToggleHighContrast,
   isNonVegMode, onToggleNonVegMode,
-  triggerCardResize,
-  isAnimationsDisabled, onEnableAnimations
+  triggerCardResize
 }, ref) => {
   const [activeTab, setActiveTab] = useState('General');
   const [loadData, setLoadData] = useState(null);
@@ -673,26 +672,6 @@ const SettingsPage = React.forwardRef(({
             <h3>Appearance</h3>
             <p>Change the background by dragging the bubbles.</p>
 
-            {isAnimationsDisabled && (
-              <div style={{ marginBottom: '20px', padding: '10px', background: 'rgba(255, 50, 50, 0.1)', borderRadius: '8px', border: '1px solid rgba(255, 50, 50, 0.3)' }}>
-                <p style={{ fontSize: '0.9rem', color: '#ff6b6b', marginBottom: '10px' }}>Animations are disabled due to a previous crash.</p>
-                <button
-                  onClick={onEnableAnimations}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    color: 'white',
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    cursor: 'pointer',
-                    fontSize: '0.85rem'
-                  }}
-                >
-                  Re-enable Animations
-                </button>
-              </div>
-            )}
-
             <div className="background-selector">
               <label style={{ fontSize: '0.9rem', marginBottom: '8px', display: 'block', opacity: 0.8 }}>Background Style</label>
               <div className="background-dropdown-container">
@@ -700,7 +679,7 @@ const SettingsPage = React.forwardRef(({
                   className="background-dropdown-toggle"
                   onClick={() => setIsBackgroundDropdownOpen(!isBackgroundDropdownOpen)}
                 >
-                  {backgroundType === 'silk' ? 'Silk' : 'Aurora'}
+                  {backgroundType === 'silk' ? 'Silk' : (backgroundType === 'aurora' ? 'Aurora' : 'Gradient')}
                   <span className={`chevron-icon ${isBackgroundDropdownOpen ? 'open' : ''}`}>▼</span>
                 </button>
                 <div className={`background-dropdown-options ${isBackgroundDropdownOpen ? 'open' : ''}`}>
@@ -715,6 +694,12 @@ const SettingsPage = React.forwardRef(({
                     onClick={() => { setBackgroundType('aurora'); setIsBackgroundDropdownOpen(false); }}
                   >
                     Aurora
+                  </button>
+                  <button
+                    className={`background-option ${backgroundType === 'gradient' ? 'active' : ''}`}
+                    onClick={() => { setBackgroundType('gradient'); setIsBackgroundDropdownOpen(false); }}
+                  >
+                    Gradient
                   </button>
                 </div>
               </div>
@@ -821,20 +806,10 @@ function App() {
   const [isNonVegMode, setIsNonVegMode] = useState(() => getCookie('isNonVegMode') === 'true');
 
   // --- WebGL Context Loss Handling ---
-  const [isAnimationsDisabled, setIsAnimationsDisabled] = useState(() => {
-    return localStorage.getItem('disable_animation') === 'true';
-  });
-
   const handleContextLost = useCallback((event) => {
     event && event.preventDefault();
-    console.error("WebGL Context Lost! Reloading and disabling animations.");
-    localStorage.setItem('disable_animation', 'true');
-    window.location.reload();
-  }, []);
-
-  const handleEnableAnimations = useCallback(() => {
-    localStorage.removeItem('disable_animation');
-    setIsAnimationsDisabled(false);
+    console.error("WebGL Context Lost! Switching to Gradient background and reloading.");
+    setCookie('backgroundType', 'gradient', 365); // Force save to cookie immediately
     window.location.reload();
   }, []);
 
@@ -1298,7 +1273,7 @@ function App() {
       <Toast message={toast.message} show={toast.show} />
 
       <div className="silk-container">
-        {isAnimationsDisabled ? (
+        {backgroundType === 'gradient' ? (
           <div className="static-background" style={{ width: '100%', height: '100%', ...staticBackgroundStyle }} />
         ) : (
           backgroundType === 'silk' ? (
