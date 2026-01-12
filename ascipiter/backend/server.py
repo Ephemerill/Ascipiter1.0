@@ -189,6 +189,16 @@ def update_weekly_menu_cache_job():
         except Exception as e:
             logging.error(f"SCHEDULER: Error during scheduled weekly scrape: {e}")
 
+def update_chapel_cache_job():
+    with app.app_context():
+        logging.info("SCHEDULER: Running scheduled CHAPEL scrape job...")
+        try:
+            chapel_data = get_chapel_events()
+            write_chapel_cache(chapel_data)
+            logging.info("SCHEDULER: Chapel cache successfully updated.")
+        except Exception as e:
+            logging.error(f"SCHEDULER: Error during scheduled chapel scrape: {e}")
+
 
 # --- API ENDPOINTS ---
 
@@ -400,6 +410,7 @@ if __name__ == '__main__':
     scheduler.add_job(update_menu_cache_job, 'interval', minutes=60)
     scheduler.add_job(update_non_veg_menu_cache_job, 'interval', minutes=60)
     scheduler.add_job(update_weekly_menu_cache_job, 'interval', hours=4)
+    scheduler.add_job(update_chapel_cache_job, 'interval', hours=6)
     scheduler.start()
     
     with app.app_context():
@@ -409,6 +420,8 @@ if __name__ == '__main__':
         update_non_veg_menu_cache_job()
         logging.info("Performing initial weekly menu scrape on startup...")
         update_weekly_menu_cache_job()
+        logging.info("Performing initial chapel scrape on startup...")
+        update_chapel_cache_job()
 
     logging.info("Starting Flask server and background scheduler.")
     app.run(debug=False, host='0.0.0.0', port=5001)

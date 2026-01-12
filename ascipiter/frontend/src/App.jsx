@@ -1241,7 +1241,10 @@ function App() {
       .map(event => ({ ...event, dateObject: parseChapelDate(event.time) }))
       .filter(event => event.dateObject && event.dateObject > new Date());
 
-    const remainingCredits = allUpcomingEvents.length;
+    const currentYear = new Date().getFullYear();
+    const semesterEndDate = new Date(currentYear, 4, 10, 23, 59, 59); // May 10th
+
+    const remainingCredits = allUpcomingEvents.filter(event => event.dateObject <= semesterEndDate).length;
 
     const eventsToDisplay = allUpcomingEvents
       .sort((a, b) => a.dateObject - b.dateObject)

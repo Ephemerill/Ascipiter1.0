@@ -16,8 +16,9 @@ def get_chapel_events():
     current_year = datetime.now().year
 
     try:
-        # --- FIX: Added a 15-second timeout to prevent the app from hanging ---
-        response = requests.get(url, timeout=15)
+        # --- FIX: Added a 30-second timeout to prevent the app from hanging ---
+        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'}
+        response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
 
         soup = BeautifulSoup(response.text, 'html.parser')
