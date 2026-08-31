@@ -1,5 +1,5 @@
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 import json
 import re
 import logging
@@ -68,7 +68,90 @@ def find_print_menu_url(page_url: str, pattern: str) -> str | None:
         logging.error(f"An unexpected error occurred while finding the URL: {e}")
         return None
 
-# --- Function to Scrape the Menu (Unchanged Logic) ---
+# --- Helpers for the current (2026) print-menu layout ---
+def _matches_target_station(station_name: str, normalized_target_stations: set) -> bool:
+    """Check a station name against the normalized targets (exact or prefix match)."""
+    normalized = re.sub(r'[^a-z0-9]', '', station_name.lower())
+    return any(normalized == target or normalized.startswith(target)
+               for target in normalized_target_stations)
+
+
+def _clean_station_name(station_name: str) -> str:
+    """Strip a trailing meal period the new layout appends (e.g. "CHEF'S TABLE BREAKFAST")."""
+    return re.sub(r'\s+(BREAKFAST|LUNCH|DINNER|BRUNCH)\s*$', '', station_name,
+                  flags=re.IGNORECASE).strip()
+
+
+def _parse_item_paragraph(p_tag) -> dict | None:
+    """
+    Parse one menu item <p>. In the new layout the meal name is the leading text,
+    followed by an optional <span class="sides"> description and icon <img> tags.
+    Returns {'meal': ..., 'description': ...} or None if no name could be extracted.
+    """
+    # Meal name = text nodes before the first child tag
+    name_parts = []
+    for child in p_tag.children:
+        if isinstance(child, NavigableString):
+            name_parts.append(str(child))
+        else:
+            break
+    meal_name = re.sub(r'\s+', ' ', ''.join(name_parts)).strip()
+
+    if not meal_name:
+        # Older layout kept the name in a <strong> tag
+        strong_tag = p_tag.find('strong')
+        if strong_tag:
+            meal_name = re.split(r'\s*\|', strong_tag.get_text(strip=True), 1)[0].strip()
+    if not meal_name:
+        return None
+
+    description = None
+    sides_span = p_tag.find('span', class_='sides')
+    if sides_span:
+        desc_text = re.sub(r'\s+', ' ', sides_span.get_text(' ', strip=True))
+        desc_text = re.sub(r'^(with|side:)\s+', '', desc_text, flags=re.IGNORECASE)
+        description = desc_text if desc_text else None
+
+    return {"meal": meal_name, "description": description}
+
+
+def _parse_meal_type_sections(day_sections, normalized_target_stations) -> dict:
+    """
+    Parse the new print-menu layout: one div.meal-types per meal period, each
+    holding div.row entries. A row's div.eni-menu-station names the station;
+    follow-up rows for the same station leave it empty, so carry it forward.
+    """
+    structured_menu = {}
+    for section in day_sections:
+        day_spacer = section.find('div', class_='day')
+        meal_period = day_spacer.get_text(strip=True).upper() if day_spacer else "Unknown Meal Period"
+        current_station = None
+
+        for row in section.find_all('div', class_='row'):
+            station_div = row.find('div', class_='eni-menu-station')
+            if station_div:
+                station_text = station_div.get_text(' ', strip=True)
+                if station_text:
+                    current_station = _clean_station_name(station_text)
+
+            if not current_station or not _matches_target_station(current_station, normalized_target_stations):
+                continue
+
+            description_div = row.find('div', class_='description')
+            if not description_div:
+                continue
+
+            for item in description_div.find_all('div', class_='item'):
+                p_tag = item.find('p') or item
+                parsed = _parse_item_paragraph(p_tag)
+                if parsed:
+                    structured_menu.setdefault(meal_period, {}) \
+                                   .setdefault(current_station, []) \
+                                   .append(parsed)
+    return structured_menu
+
+
+# --- Function to Scrape the Menu ---
 def _scrape_structured_menu(url: str, target_stations: list) -> dict:
     """
     Internal function to scrape menu data and organize by meal period/station.
@@ -115,6 +198,18 @@ def _scrape_structured_menu(url: str, target_stations: list) -> dict:
              logging.error("Completely unable to find any menu content area. Aborting scrape.")
              return {}
 
+    # --- New layout (2026): meal periods live in div.meal-types sections ---
+    day_sections = menu_content_area.find_all('div', class_='meal-types')
+    if day_sections:
+        logging.info(f"Detected new print-menu layout ({len(day_sections)} meal period sections).")
+        structured_menu = _parse_meal_type_sections(day_sections, normalized_target_stations)
+        if not structured_menu:
+            logging.warning("New-layout parsing finished, but no items found for target stations.")
+        else:
+            logging.info(f"Scraping finished. Found data for meal periods: {list(structured_menu.keys())}")
+        return structured_menu
+
+    # --- Legacy layout fallback ---
     # Select potential elements containing meal periods or menu items
     # Look for daypart divs or row divs which are common structures
     potential_elements = menu_content_area.select('.daypart, .row.even, .row.odd')
