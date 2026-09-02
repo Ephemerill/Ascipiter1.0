@@ -644,6 +644,67 @@ html,
   margin: 0;
 }
 
+.event-title-link {
+  color: inherit;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.event-title-link:hover {
+  text-decoration: underline;
+  opacity: 0.85;
+}
+
+.event-tag {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  margin-left: 0.5rem;
+  opacity: 0.9;
+}
+
+.event-tag.athletics {
+  background-color: rgba(255, 80, 80, 0.18);
+  border-color: rgba(255, 120, 120, 0.35);
+}
+
+.events-expand-toggle {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  margin: 1rem auto 0 auto;
+}
+
+.events-expand-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.events-expand-toggle .chevron-icon {
+  transition: transform 0.3s ease;
+}
+
+.events-expand-toggle .chevron-icon.open {
+  transform: rotate(180deg);
+}
+
 .chapel-events-list::-webkit-scrollbar {
   width: 8px;
 }

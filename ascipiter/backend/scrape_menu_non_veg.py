@@ -55,62 +55,120 @@ def find_print_menu_url(page_url: str, pattern: str) -> str | None:
         logging.error(f"An unexpected error occurred while finding the URL: {e}")
         return None
 
-def is_similar(a, b, threshold=0.6):
-    """Check if two strings are similar."""
-    return SequenceMatcher(None, a.lower(), b.lower()).ratio() > threshold
+# Words that identify a dish as containing meat (checked in name and description).
+MEAT_WORDS = {
+    'chicken', 'beef', 'pork', 'bacon', 'ham', 'turkey', 'sausage', 'steak',
+    'carnitas', 'carne', 'asada', 'barbacoa', 'birria', 'pastrami', 'salami',
+    'pepperoni', 'prosciutto', 'chorizo', 'brisket', 'meatball', 'meatloaf',
+    'meat', 'cheesesteak', 'pollo', 'lamb', 'duck', 'veal', 'gyro', 'pastor',
+    'fish', 'salmon', 'tuna', 'shrimp', 'cod', 'tilapia', 'mahi', 'crab',
+    'clam', 'calamari', 'anchovy', 'sardine', 'lobster', 'oyster', 'scallop',
+}
 
-def share_significant_word(a, b):
-    """Check if two strings share a significant word (ignoring common stop words)."""
-    stop_words = {'with', 'and', 'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for', 'available', 'upon', 'request'}
-    
-    # Clean and tokenize
-    def tokenize(text):
-        text = re.sub(r'[^\w\s]', '', text.lower())
-        return set([w for w in text.split() if w not in stop_words and len(w) > 2])
+# Words that explicitly mark a dish as the vegetarian substitute for a meat dish.
+STRONG_VEG_MARKERS = {
+    'tofu', 'jackfruit', 'beyond', 'impossible', 'meatless', 'vegan',
+    'vegetarian', 'veggie', 'tempeh', 'seitan', 'soyrizo', 'plant',
+}
 
-    tokens_a = tokenize(a)
-    tokens_b = tokenize(b)
-    
-    # Check intersection
-    intersection = tokens_a.intersection(tokens_b)
-    return len(intersection) > 0
+# Additional swappable "proteins" that get stripped before comparing names,
+# so "mushroom fajita pasta" lines up with "chicken fajita pasta".
+SWAPPABLE_PROTEIN_WORDS = MEAT_WORDS | STRONG_VEG_MARKERS | {
+    'mushroom', 'portobello', 'cauliflower', 'chickpea', 'garbanzo',
+    'lentil', 'falafel', 'paneer', 'plant', 'based', 'vegetable',
+    'vegetables', 'garden',
+}
+
+COMPARE_STOP_WORDS = {'with', 'and', 'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'or', 'for'}
+
+# Faux-meat phrases are removed before scanning for meat words so that
+# "plant-based sausage" or "veggie patty" don't read as meat.
+FAUX_MEAT_PHRASES = re.compile(
+    r'\b(?:plant[- ]based|veggie|vegan|vegetarian|meatless|beyond|impossible)\s+\w+', re.IGNORECASE)
+
+
+def _normalize(text):
+    return re.sub(r'[^\w\s]', ' ', text.lower().replace('-', ' '))
+
+
+def _contains_meat(item):
+    """True if the item's name or description mentions real meat."""
+    text = f"{item.get('meal') or ''} {item.get('description') or ''}"
+    text = FAUX_MEAT_PHRASES.sub(' ', text)
+    tokens = set(_normalize(text).split())
+    return bool(tokens & MEAT_WORDS)
+
+
+def _has_strong_marker(name):
+    """True if the meal name itself is labeled as a vegetarian substitute."""
+    return bool(set(_normalize(name).split()) & STRONG_VEG_MARKERS)
+
+
+def _stripped_name(name):
+    """Meal name with proteins/markers and filler words removed, for comparison."""
+    tokens = [w for w in _normalize(name).split()
+              if w not in COMPARE_STOP_WORDS and w not in SWAPPABLE_PROTEIN_WORDS]
+    return ' '.join(tokens)
+
+
+def _is_variant_of(veg_name, other_name):
+    """
+    True if two meals are the same dish once the swapped protein is removed,
+    e.g. 'kalua jackfruit' vs 'kalua pork', 'coconut green curry with tofu'
+    vs 'coconut yellow curry with chicken'. A single shared generic word
+    ('pizza', 'soup') is NOT enough.
+    """
+    a = _stripped_name(veg_name)
+    b = _stripped_name(other_name)
+    if a == b:
+        return True  # pure protein swap (also covers both stripping to '')
+    if not a or not b:
+        return False
+    if set(a.split()) == set(b.split()):
+        return True
+    return SequenceMatcher(None, a, b).ratio() >= 0.72
+
 
 def filter_vegetarian_items(station_items):
     """
-    Filters out vegetarian items if they are likely versions of non-vegetarian items in the same list.
+    Filters out vegetarian items that are substitutes for meat dishes at the
+    same station. Distinct vegetarian dishes (a soup, a specialty pizza) are
+    kept; only protein-swapped twins and explicitly labeled substitutes go.
     """
-    non_veg_items = [item for item in station_items if not item.get('is_veg')]
-    veg_items = [item for item in station_items if item.get('is_veg')]
+    meaty_items = [item for item in station_items if _contains_meat(item)]
+    # Counterpart pool for duplicate checks: anything not itself labeled a substitute
+    counterpart_items = [item for item in station_items if not _has_strong_marker(item['meal'])]
 
-    # If no non-veg items exist, keep everything (e.g. a salad station)
-    if not non_veg_items:
-        return station_items
+    final_items = []
+    for item in station_items:
+        name = item['meal']
 
-    final_items = non_veg_items[:]
-    
-    for v_item in veg_items:
-        is_version = False
-        v_name = v_item['meal']
-        
-        # Check against all non-veg items
-        for nv_item in non_veg_items:
-            nv_name = nv_item['meal']
-            
-            # Criteria 1: Strong keywords indicating a substitute
-            if "beyond" in v_name.lower() or "plant-based" in v_name.lower() or "tofu" in v_name.lower():
-                # If there's a meat option, assume this is the veg alternative
-                is_version = True
-                break
-            
-            # Criteria 2: Shared significant words (e.g. "Mole", "Pizza", "Burger")
-            if share_significant_word(v_name, nv_name):
-                is_version = True
-                break
-                
-        if not is_version:
-            final_items.append(v_item)
-            
-    return final_items
+        # Never drop something that clearly contains meat, even if mis-flagged.
+        # The site's vegetarian icons are unreliable (often missing), so
+        # meat-free is determined from the words, not the is_veg flag.
+        if _contains_meat(item):
+            final_items.append(item)
+            continue
+
+        if _has_strong_marker(name):
+            # Explicit substitute ("kalua jackfruit", "vegetarian cheese pizza"):
+            # drop when the station serves meat, or when the non-substitute
+            # version of the same dish is also on the menu.
+            has_duplicate = any(other is not item and _is_variant_of(name, other['meal'])
+                                for other in counterpart_items)
+            if meaty_items or has_duplicate:
+                continue
+        else:
+            # Unlabeled meat-free item: only drop if it is a protein-swapped
+            # twin of an actual meat dish ("mushroom fajita pasta" vs
+            # "chicken fajita pasta").
+            if any(_is_variant_of(name, meaty['meal']) for meaty in meaty_items):
+                continue
+
+        final_items.append(item)
+
+    # Safety net: never empty out a station entirely
+    return final_items if final_items else station_items
 
 # --- Helpers for the current (2026) print-menu layout ---
 def _matches_target_station(station_name: str, normalized_target_stations: set) -> bool:

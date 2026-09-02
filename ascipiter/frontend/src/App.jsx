@@ -158,34 +158,22 @@ const calculateTimeRemaining = (eventDate) => {
   }
 };
 
-// Robust date parsing function
-const parseChapelDate = (timeString) => {
-  if (!timeString) return null;
-  const cleanedString = timeString.replace(' at ', ' ').replace(/,,/g, ',');
-  const parts = cleanedString.match(/^(?:\w{3},\s)?(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{2})\s(AM|PM)/i);
+// --- Event helpers ---
+// End of the current semester, used to count remaining chapel credits.
+const getSemesterEnd = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  // July onward = fall semester (ends in December); otherwise spring (ends in May).
+  return now.getMonth() >= 6
+    ? new Date(year, 11, 31, 23, 59, 59)
+    : new Date(year, 4, 31, 23, 59, 59);
+};
 
-  if (!parts) {
-    console.error("Failed to parse date string with regex:", timeString);
-    return null;
-  }
-
-  const [, monthStr, day, year, hourStr, minute, ampm] = parts;
-  const monthMap = { "January": 0, "February": 1, "March": 2, "April": 3, "May": 4, "June": 5, "July": 6, "August": 7, "September": 8, "October": 9, "November": 10, "December": 11 };
-  const fullMonthStr = Object.keys(monthMap).find(m => m.startsWith(monthStr));
-  if (!fullMonthStr) {
-    console.error(`Could not find full month for abbreviation: ${monthStr}`);
-    return null;
-  }
-  const month = monthMap[fullMonthStr];
-  let hour = parseInt(hourStr, 10);
-  if (ampm.toUpperCase() === 'PM' && hour !== 12) hour += 12;
-  if (ampm.toUpperCase() === 'AM' && hour === 12) hour = 0;
-  const eventDate = new Date(year, month, parseInt(day, 10), hour, parseInt(minute, 10));
-  if (isNaN(eventDate.getTime())) {
-    console.error("Created an invalid date from:", timeString);
-    return null;
-  }
-  return eventDate;
+const formatEventDate = (dateObject) => dateObject.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+const formatEventTime = (dateObject) => {
+  // Events scraped without a listed time default to midnight; don't show a time for those.
+  if (dateObject.getHours() === 0 && dateObject.getMinutes() === 0) return '';
+  return dateObject.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 };
 
 
@@ -600,6 +588,8 @@ const AdvancedColorPicker = ({
 const SettingsPage = React.forwardRef(({
   onBack,
   isChapelVisible, onToggleChapel,
+  isChapelOnly, onToggleChapelOnly,
+  showAthletics, onToggleShowAthletics,
   isCreditsVisible, onToggleCreditsVisible,
   showMealHours, onToggleShowMealHours,
   isRatingVisible, onToggleRatingVisible,
@@ -655,7 +645,9 @@ const SettingsPage = React.forwardRef(({
             <h3>General Settings</h3>
             <p>Configure general application settings here.</p>
             <ToggleSwitch label={isDayPickerVisible ? "Show Day Selector" : "Show Day Selector"} isToggled={isDayPickerVisible} onToggle={onToggleDayPicker} />
-            <ToggleSwitch label={isChapelVisible ? "Show Chapel Schedule" : "Show Chapel Schedule"} isToggled={isChapelVisible} onToggle={onToggleChapel} />
+            <ToggleSwitch label="Show Events Schedule" isToggled={isChapelVisible} onToggle={onToggleChapel} />
+            {isChapelVisible && <ToggleSwitch label="Chapels Only" isToggled={isChapelOnly} onToggle={onToggleChapelOnly} />}
+            {isChapelVisible && <ToggleSwitch label="Show Athletics Events" isToggled={showAthletics} onToggle={onToggleShowAthletics} />}
             <ToggleSwitch label={isCreditsVisible ? "Show Credit Counter" : "Show Credit Counter"} isToggled={isCreditsVisible} onToggle={onToggleCreditsVisible} />
             <ToggleSwitch label={showMealHours ? "Show Meal Times" : "Show Meal Times"} isToggled={showMealHours} onToggle={onToggleShowMealHours} />
             <ToggleSwitch label={isRatingVisible ? "Show Rating System" : "Show Rating System"} isToggled={isRatingVisible} onToggle={onToggleRatingVisible} />
@@ -770,11 +762,11 @@ const SettingsPage = React.forwardRef(({
 function App() {
   const [activePage, setActivePage] = useState(getCurrentMealPeriod());
   const [menuData, setMenuData] = useState(null);
-  const [chapelData, setChapelData] = useState(null);
+  const [eventsData, setEventsData] = useState(null);
   const [isMenuLoading, setIsMenuLoading] = useState(true);
-  const [isChapelLoading, setIsChapelLoading] = useState(true);
+  const [isEventsLoading, setIsEventsLoading] = useState(true);
   const [menuError, setMenuError] = useState(null);
-  const [chapelError, setChapelError] = useState(null);
+  const [eventsError, setEventsError] = useState(null);
   const [anonymousId, setAnonymousId] = useState(null);
 
   // --- State for weekly menu and day picker ---
@@ -784,9 +776,12 @@ function App() {
 
 
   const [showMenuLoader, setShowMenuLoader] = useState(false);
-  const [showChapelLoader, setShowChapelLoader] = useState(false);
+  const [showEventsLoader, setShowEventsLoader] = useState(false);
 
   const [isChapelVisible, setIsChapelVisible] = useState(() => getCookie('chapelVisible') === 'true');
+  const [isChapelOnly, setIsChapelOnly] = useState(() => getCookie('eventsChapelOnly') === 'true');
+  const [showAthletics, setShowAthletics] = useState(() => getCookie('eventsShowAthletics') === 'true');
+  const [isEventsExpanded, setIsEventsExpanded] = useState(false);
   const [isCreditsVisible, setIsCreditsVisible] = useState(() => getCookie('creditsVisible') !== 'false');
   const [showMealHours, setShowMealHours] = useState(() => getCookie('showMealHours') !== 'false');
   const [isRatingVisible, setIsRatingVisible] = useState(() => getCookie('ratingVisible') !== 'false');
@@ -898,6 +893,8 @@ function App() {
 
 
   useEffect(() => { setCookie('chapelVisible', isChapelVisible, 365); }, [isChapelVisible]);
+  useEffect(() => { setCookie('eventsChapelOnly', isChapelOnly, 365); }, [isChapelOnly]);
+  useEffect(() => { setCookie('eventsShowAthletics', showAthletics, 365); }, [showAthletics]);
   useEffect(() => { setCookie('creditsVisible', isCreditsVisible, 365); }, [isCreditsVisible]);
   useEffect(() => { setCookie('showMealHours', showMealHours, 365); }, [showMealHours]);
   useEffect(() => { setCookie('ratingVisible', isRatingVisible, 365); }, [isRatingVisible]);
@@ -949,7 +946,7 @@ function App() {
 
   const navItemsTemplate = useMemo(() => [
     { label: "Help", textColor: "#fff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [{ label: "Donate to me :)", ariaLabel: "donate", href: "https://buymeacoffee.com/ephemeril", target: "_blank" }, { label: "Send Feedback", ariaLabel: "Send Feedback", type: 'button', onClick: toggleFeedbackModal }] },
-    { label: "Preferences", textColor: "#fff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [{ label: "Show AI", ariaLabel: "Toggle AI Helper", type: 'toggle', id: 'ai-toggle' }, { label: "Show Chapel Schedule", ariaLabel: "Toggle Chapel Schedule display", type: 'toggle', id: 'chapel-toggle' }, { label: "Settings", ariaLabel: "Open or Close Settings Page", type: 'button', onClick: toggleSettingsPage }] },
+    { label: "Preferences", textColor: "#fff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [{ label: "Show AI", ariaLabel: "Toggle AI Helper", type: 'toggle', id: 'ai-toggle' }, { label: "Show Events Schedule", ariaLabel: "Toggle Events Schedule display", type: 'toggle', id: 'chapel-toggle' }, { label: "Settings", ariaLabel: "Open or Close Settings Page", type: 'button', onClick: toggleSettingsPage }] },
     { label: "Useful Links", textColor: "#ffffffff", isGlass: true, glassBlur: 25, glassTransparency: 0.05, links: [{ label: "Github", ariaLabel: "github", href: "https://github.com/Ephemerill/Ascipiter1.0", target: "_blank" }, { label: "Legacy", ariaLabel: "Legacy Site", href: "https://legacy.biolawizard.com/", target: "_blank" }, { label: "Caf Website", ariaLabel: "Caf Website", href: "https://cafebiola.cafebonappetit.com/cafe/cafe-biola/", target: "_blank" }] }
   ], [toggleSettingsPage, toggleFeedbackModal]);
 
@@ -1033,19 +1030,19 @@ function App() {
       }
     };
 
-    const fetchChapel = async () => {
+    const fetchEvents = async () => {
       if (!isMounted) return;
-      const loaderTimer = setTimeout(() => { if (isMounted) setShowChapelLoader(true); }, 300);
+      const loaderTimer = setTimeout(() => { if (isMounted) setShowEventsLoader(true); }, 300);
       try {
-        const response = await fetch(`${API_BASE_URL}/chapel`);
+        const response = await fetch(`${API_BASE_URL}/events`);
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
-        if (isMounted) setChapelData(data);
+        if (isMounted) setEventsData(data);
       } catch (e) {
-        if (isMounted) setChapelError(e.message);
+        if (isMounted) setEventsError(e.message);
       } finally {
         clearTimeout(loaderTimer);
-        if (isMounted) setIsChapelLoading(false);
+        if (isMounted) setIsEventsLoading(false);
       }
     };
 
@@ -1063,7 +1060,7 @@ function App() {
     };
 
     fetchMenuData();
-    fetchChapel();
+    fetchEvents();
     fetchWeeklyMenu();
 
     return () => { isMounted = false; };
@@ -1089,7 +1086,13 @@ function App() {
   useLayoutEffect(() => { if (isSettingsVisible && settingsContentRef.current) { triggerCardResize(); gsap.fromTo(settingsContentRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, delay: 0.1, ease: 'power2.out' }); } }, [isSettingsVisible, triggerCardResize]);
   useLayoutEffect(() => { if (isAiVisible) { gsap.fromTo(".explain-button", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.5, stagger: 0.05, ease: 'back.out(1.7)' }); } }, [isAiVisible, activePage, menuData, selectedDay]);
   useLayoutEffect(() => { const mealCard = mealCardRef.current, chapelCard = chapelCardRef.current; const onAnimationComplete = () => { triggerCardResize(); triggerChapelResize(); }; const tl = gsap.timeline({ onComplete: onAnimationComplete }); if (isChapelVisible) { gsap.set(chapelCard, { display: 'block', height: 'auto' }); tl.to(mealCard, { width: '65%', duration: 0.6, ease: 'power3.inOut' }).fromTo(chapelCard, { width: '0%', opacity: 0, xPercent: -20 }, { width: '32%', opacity: 1, xPercent: 0, duration: 0.6, ease: 'power3.inOut' }, "<"); } else { if (chapelCard && chapelCard.style.display !== 'none') { const chapelContent = chapelContentRef.current; tl.to(chapelContent, { opacity: 0, duration: 0.25, ease: 'power1.in' }).to(mealCard, { width: '75%', duration: 0.6, ease: 'power3.inOut' }).to(chapelCard, { width: '0%', opacity: 0, xPercent: -20, duration: 0.6, ease: 'power3.inOut' }, "<").set(chapelCard, { display: 'none' }).set(chapelContent, { opacity: 1 }); } else { gsap.set(mealCard, { width: '75%' }); } } }, [isChapelVisible, triggerCardResize, triggerChapelResize]);
-  useLayoutEffect(() => { if (!isChapelLoading && isChapelVisible) { const timer = setTimeout(triggerChapelResize, 50); return () => clearTimeout(timer); } }, [isChapelLoading, isChapelVisible, chapelData, triggerChapelResize]);
+  useLayoutEffect(() => { if (!isEventsLoading && isChapelVisible) { const timer = setTimeout(triggerChapelResize, 50); return () => clearTimeout(timer); } }, [isEventsLoading, isChapelVisible, eventsData, isEventsExpanded, isChapelOnly, showAthletics, isCreditsVisible, triggerChapelResize]);
+  // Fade newly revealed event cards in with a stagger when the list expands
+  useLayoutEffect(() => {
+    if (isEventsExpanded) {
+      gsap.fromTo('.event-extra-item', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.05, ease: 'power2.out' });
+    }
+  }, [isEventsExpanded]);
   useEffect(() => { const timer = setTimeout(triggerCardResize, 150); return () => clearTimeout(timer); }, [aiResponses, triggerCardResize]);
 
   const silkColor1 = useMemo(() => {
@@ -1230,46 +1233,77 @@ function App() {
     );
   };
 
-  const renderChapelContent = () => {
-    if (isChapelLoading) {
-      return showChapelLoader ? <><h2 className="meal-period-title">Chapel</h2><p>Loading Chapel...</p></> : null;
+  const renderEventsContent = () => {
+    if (isEventsLoading) {
+      return showEventsLoader ? <><h2 className="meal-period-title">Events</h2><p>Loading Events...</p></> : null;
     }
-    if (chapelError) return <><h2 className="meal-period-title">Chapel</h2><p>Chapel events unavailable.</p></>;
-    if (!chapelData || chapelData.length === 0) return <><h2 className="meal-period-title">Chapel</h2><p>No chapel events listed.</p></>;
+    if (eventsError) return <><h2 className="meal-period-title">Events</h2><p>Events unavailable.</p></>;
 
-    const allUpcomingEvents = chapelData
-      .map(event => ({ ...event, dateObject: parseChapelDate(event.time) }))
-      .filter(event => event.dateObject && event.dateObject > new Date());
+    const allEvents = (eventsData && eventsData.events) || [];
+    if (allEvents.length === 0) return <><h2 className="meal-period-title">Events</h2><p>No events listed.</p></>;
 
-    const currentYear = new Date().getFullYear();
-    const semesterEndDate = new Date(currentYear, 4, 10, 23, 59, 59); // May 10th
+    // Fallback source only contains chapels, so behave like chapel-only mode
+    const isChapelFallback = eventsData.source === 'chapel_page';
+    const chapelOnlyView = isChapelOnly || isChapelFallback;
 
-    const remainingCredits = allUpcomingEvents.filter(event => event.dateObject <= semesterEndDate).length;
+    const now = new Date();
+    const upcomingEvents = allEvents
+      .filter(event => event.start)
+      .map(event => ({ ...event, dateObject: new Date(event.start) }))
+      .filter(event => !isNaN(event.dateObject.getTime()) && event.dateObject > now)
+      .sort((a, b) => a.dateObject - b.dateObject);
 
-    const eventsToDisplay = allUpcomingEvents
-      .sort((a, b) => a.dateObject - b.dateObject)
-      .slice(0, 5);
+    const semesterEndDate = getSemesterEnd();
+    const remainingCredits = upcomingEvents.filter(event => event.is_chapel && event.dateObject <= semesterEndDate).length;
+
+    let filteredEvents = upcomingEvents;
+    if (chapelOnlyView) {
+      filteredEvents = filteredEvents.filter(event => event.is_chapel);
+    } else if (!showAthletics) {
+      filteredEvents = filteredEvents.filter(event => !event.is_athletics);
+    }
+
+    const eventsToDisplay = filteredEvents.slice(0, isEventsExpanded ? 20 : 5);
+    const canExpand = filteredEvents.length > 5;
 
     return (
       <>
-        <h2 className="meal-period-title">Upcoming Chapel</h2>
-        {isCreditsVisible && <p className="chapel-credit-counter">Total credits remaining: {remainingCredits}</p>}
+        <h2 className="meal-period-title">{chapelOnlyView ? 'Upcoming Chapel' : 'Upcoming Events'}</h2>
+        {isCreditsVisible && <p className="chapel-credit-counter">Chapel credits remaining: {remainingCredits}</p>}
         <div className="chapel-events-list">
           {eventsToDisplay.length > 0 ? (
             eventsToDisplay.map((event, index) => {
-              const [datePart, timePart] = event.time.split(/ at /i);
+              const eventTime = formatEventTime(event.dateObject);
               return (
-                <div key={index} className="chapel-event-card">
+                <div key={event.url || index} className={`chapel-event-card ${index >= 5 ? 'event-extra-item' : ''}`}>
                   <div className="chapel-event-content">
-                    <div className="chapel-header"><h3 className="chapel-title">{event.title}</h3><span className="chapel-countdown">{calculateTimeRemaining(event.dateObject)}</span></div>
-                    <div className="chapel-datetime"><p className="chapel-date">{datePart.replace(/,,/g, ',').replace(/,$/, '')}</p><p className="chapel-time">{timePart || ''}</p></div>
-                    {event.description !== 'No description' && <p className="chapel-description">{event.description}</p>}
+                    <div className="chapel-header">
+                      <h3 className="chapel-title">
+                        {event.url ? (
+                          <a className="event-title-link" href={event.url} target="_blank" rel="noopener noreferrer">{event.title}</a>
+                        ) : event.title}
+                        {event.is_chapel && !chapelOnlyView && <span className="event-tag">Chapel</span>}
+                        {event.is_athletics && <span className="event-tag athletics">Athletics</span>}
+                      </h3>
+                      <span className="chapel-countdown">{calculateTimeRemaining(event.dateObject)}</span>
+                    </div>
+                    <div className="chapel-datetime">
+                      <p className="chapel-date">{formatEventDate(event.dateObject)}</p>
+                      {eventTime && <p className="chapel-time">{eventTime}</p>}
+                    </div>
+                    {event.description && <p className="chapel-description">{event.description}</p>}
                   </div>
                 </div>
               );
             })
-          ) : <p>No upcoming chapel events found.</p>}
+          ) : <p>{chapelOnlyView ? 'No upcoming chapel events found.' : 'No upcoming events found.'}</p>}
         </div>
+        {canExpand && (
+          <button className="events-expand-toggle" onClick={() => setIsEventsExpanded(v => !v)}>
+            <span>{isEventsExpanded ? 'Show Less' : 'Show More'}</span>
+            <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg" className={`chevron-icon ${isEventsExpanded ? 'open' : ''}`}><path d="M1.41 0.59L6 5.17L10.59 0.59L12 2L6 8L0 2L1.41 0.59Z" fill="white" /></svg>
+          </button>
+        )}
       </>
     );
   };
@@ -1328,6 +1362,8 @@ function App() {
                   ref={settingsContentRef}
                   onBack={toggleSettingsPage}
                   isChapelVisible={isChapelVisible} onToggleChapel={() => setIsChapelVisible(v => !v)}
+                  isChapelOnly={isChapelOnly} onToggleChapelOnly={() => setIsChapelOnly(v => !v)}
+                  showAthletics={showAthletics} onToggleShowAthletics={() => setShowAthletics(v => !v)}
                   isCreditsVisible={isCreditsVisible} onToggleCreditsVisible={() => setIsCreditsVisible(v => !v)}
                   showMealHours={showMealHours} onToggleShowMealHours={() => setShowMealHours(v => !v)}
                   isRatingVisible={isRatingVisible} onToggleRatingVisible={() => setIsRatingVisible(v => !v)}
@@ -1374,7 +1410,7 @@ function App() {
               )}
             </div>
           </GlassSurface>
-          <GlassSurface ref={chapelCardRef} borderRadius={20} className="chapel-card"><div className="card-content chapel-card-wrapper" ref={chapelContentRef}>{renderChapelContent()}</div></GlassSurface>
+          <GlassSurface ref={chapelCardRef} borderRadius={20} className="chapel-card"><div className="card-content chapel-card-wrapper" ref={chapelContentRef}>{renderEventsContent()}</div></GlassSurface>
         </div>
       </div>
 

@@ -13,7 +13,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from scrape_menu import get_menu_data_for_template
 from scrape_menu_non_veg import get_non_veg_menu_data
 from scrape_weather import get_weather
-from scrape_chapel import get_chapel_events
+from scrape_events import get_events_data
 from scrape_weekly import find_weekly_menu_url, scrape_weekly_menu
 
 # Configure basic logging
@@ -29,7 +29,7 @@ CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "https://b
 # --- FILE PATH CONFIGURATION ---
 MENU_CACHE_FILE = 'menu_cache.json'
 MENU_CACHE_NON_VEG_FILE = 'menu_cache_non_veg.json'
-CHAPEL_CACHE_FILE = 'chapel_cache.json'
+EVENTS_CACHE_FILE = 'events_cache.json'
 WEEKLY_MENU_CACHE_FILE = 'weekly_menu_cache.json'
 ANNOUNCEMENT_FILE = 'announcement.json' # --- NEW ---
 RATINGS_DB = 'ratings.db'
@@ -81,26 +81,26 @@ def write_menu_cache_non_veg(data):
     except IOError as e:
         logging.error(f"Error writing to non-veg menu cache file {MENU_CACHE_NON_VEG_FILE}: {e}")
 
-def read_chapel_cache():
-    if os.path.exists(CHAPEL_CACHE_FILE):
+def read_events_cache():
+    if os.path.exists(EVENTS_CACHE_FILE):
         try:
-            with open(CHAPEL_CACHE_FILE, 'r') as f:
+            with open(EVENTS_CACHE_FILE, 'r') as f:
                 return json.load(f)
         except (json.JSONDecodeError, IOError) as e:
-            logging.error(f"Error reading chapel cache file {CHAPEL_CACHE_FILE}: {e}")
+            logging.error(f"Error reading events cache file {EVENTS_CACHE_FILE}: {e}")
     return None
 
-def write_chapel_cache(data):
+def write_events_cache(data):
     cache_content = {
         'timestamp': datetime.datetime.utcnow().isoformat(),
         'data': data
     }
     try:
-        with open(CHAPEL_CACHE_FILE, 'w') as f:
+        with open(EVENTS_CACHE_FILE, 'w') as f:
             json.dump(cache_content, f)
-        logging.info("Successfully wrote to chapel cache.")
+        logging.info("Successfully wrote to events cache.")
     except IOError as e:
-        logging.error(f"Error writing to chapel cache file {CHAPEL_CACHE_FILE}: {e}")
+        logging.error(f"Error writing to events cache file {EVENTS_CACHE_FILE}: {e}")
 
 def read_weekly_menu_cache():
     if os.path.exists(WEEKLY_MENU_CACHE_FILE):
@@ -189,15 +189,18 @@ def update_weekly_menu_cache_job():
         except Exception as e:
             logging.error(f"SCHEDULER: Error during scheduled weekly scrape: {e}")
 
-def update_chapel_cache_job():
+def update_events_cache_job():
     with app.app_context():
-        logging.info("SCHEDULER: Running scheduled CHAPEL scrape job...")
+        logging.info("SCHEDULER: Running scheduled EVENTS scrape job...")
         try:
-            chapel_data = get_chapel_events()
-            write_chapel_cache(chapel_data)
-            logging.info("SCHEDULER: Chapel cache successfully updated.")
+            events_data = get_events_data()
+            if events_data.get('events'):
+                write_events_cache(events_data)
+                logging.info("SCHEDULER: Events cache successfully updated.")
+            else:
+                logging.error("SCHEDULER: Events scrape returned no events; keeping previous cache.")
         except Exception as e:
-            logging.error(f"SCHEDULER: Error during scheduled chapel scrape: {e}")
+            logging.error(f"SCHEDULER: Error during scheduled events scrape: {e}")
 
 
 # --- API ENDPOINTS ---
@@ -358,12 +361,35 @@ def rate_meal():
     
     return jsonify({"success": True}), 201
 
+@app.route('/api/events', methods=['GET'])
+def events_endpoint():
+    cached_info = read_events_cache()
+    if cached_info and cached_info.get('data', {}).get('events'):
+        return jsonify(cached_info['data'])
+    logging.warning("Events cache is empty. Performing initial scrape for /api/events.")
+    update_events_cache_job()
+    cached_info = read_events_cache()
+    if cached_info:
+        return jsonify(cached_info.get('data', {'events': [], 'source': 'none'}))
+    return jsonify({'events': [], 'source': 'none'})
+
 @app.route('/api/chapel', methods=['GET'])
 def chapel_endpoint():
-    cached_info = read_chapel_cache()
-    if not cached_info:
-        return jsonify([])
-    return jsonify(cached_info.get('data', []))
+    # Legacy endpoint for old clients: chapel-only view of the events cache,
+    # in the original {title, description, time} format.
+    cached_info = read_events_cache()
+    events = (cached_info or {}).get('data', {}).get('events', [])
+    legacy = []
+    for event in events:
+        if not event.get('is_chapel') or not event.get('start'):
+            continue
+        start = datetime.datetime.fromisoformat(event['start'])
+        legacy.append({
+            'title': event['title'],
+            'description': event.get('description') or 'No description',
+            'time': start.strftime('%B %-d, %Y at %-I:%M %p')
+        })
+    return jsonify(legacy)
 
 # --- ANALYTICS ENDPOINTS ---
 ANALYTICS_DB = 'analytics.db'
@@ -410,7 +436,7 @@ if __name__ == '__main__':
     scheduler.add_job(update_menu_cache_job, 'interval', minutes=60)
     scheduler.add_job(update_non_veg_menu_cache_job, 'interval', minutes=60)
     scheduler.add_job(update_weekly_menu_cache_job, 'interval', hours=4)
-    scheduler.add_job(update_chapel_cache_job, 'interval', hours=6)
+    scheduler.add_job(update_events_cache_job, 'interval', hours=6)
     scheduler.start()
     
     with app.app_context():
@@ -420,8 +446,8 @@ if __name__ == '__main__':
         update_non_veg_menu_cache_job()
         logging.info("Performing initial weekly menu scrape on startup...")
         update_weekly_menu_cache_job()
-        logging.info("Performing initial chapel scrape on startup...")
-        update_chapel_cache_job()
+        logging.info("Performing initial events scrape on startup...")
+        update_events_cache_job()
 
     logging.info("Starting Flask server and background scheduler.")
     app.run(debug=False, host='0.0.0.0', port=5001)

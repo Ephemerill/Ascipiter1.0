@@ -169,7 +169,7 @@ const CardNav = ({
                   if (lnk.id === 'ai-toggle') {
                     label = isAiVisible ? 'Show AI Helper' : 'Show AI Helper';
                   } else {
-                    label = isChapelVisible ? 'Show Chapel Schedule' : 'Show Chapel Schedule';
+                    label = isChapelVisible ? 'Show Events Schedule' : 'Show Events Schedule';
                   }
 
                   return (
